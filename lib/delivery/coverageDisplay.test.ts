@@ -14,6 +14,7 @@ import {
   listShoppableCoverageAreas,
   minCheckoutFeeThb,
   resolveProvinceForDestination,
+  destinationIdFromProvinceCode,
 } from './coverageDisplay';
 import { addDaysToYmd, getBangkokYmd } from '@/lib/deliveryHours';
 import { PREORDER_DEFAULT_ADVANCE_HOURS } from './deliveryConstraints';
@@ -28,6 +29,8 @@ const today = getBangkokYmd(tenAmBangkok);
 const tomorrow = addDaysToYmd(today, 1);
 
 assert(isExpansionProvinceCode('chiang-mai') === false, 'CM not expansion');
+assert(destinationIdFromProvinceCode('chiang-mai') === 'CHIANG_MAI', 'CM destination from code');
+assert(destinationIdFromProvinceCode('chon-buri') === 'PATTAYA', 'Pattaya destination from Chon Buri');
 assert(isExpansionProvinceCode('chon-buri') === true, 'Pattaya market is expansion');
 assert(isExpansionProvinceCode('bangkok') === true, 'Bangkok market is expansion');
 
@@ -187,7 +190,7 @@ assert(
     'en',
     tenAmBangkok
   );
-  assert(expansion.catalogHref === '/en/catalog/pattaya', 'Pattaya catalog href');
+  assert(expansion.catalogHref === '/en/catalog', 'Pattaya catalog href is the single catalog URL');
   assert(expansion.categoriesLine === 'Flowers only', 'expansion categories default');
 }
 

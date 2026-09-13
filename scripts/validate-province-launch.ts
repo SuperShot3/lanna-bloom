@@ -109,7 +109,7 @@ function main() {
     checks.push(
       pass(
         'MARKETS',
-        `${market.pathSlug} status=${market.status} (Header/Footer/sitemap)`
+        `${market.pathSlug} status=${market.status} seoIndexable=${market.seoIndexable === true} (Header/Footer; sitemap only if seoIndexable)`
       )
     );
   } else {

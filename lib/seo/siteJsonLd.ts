@@ -6,7 +6,6 @@
  */
 import { getBaseUrl } from '@/lib/siteUrl';
 import { BRAND_LOGO_SRC } from '@/lib/brandLogo';
-import { getActiveMarkets } from '@/lib/delivery/markets';
 import { getContactPhoneE164 } from '@/lib/messenger';
 import { GOOGLE_PLACE_URL } from '@/lib/reviewsConfig';
 
@@ -63,10 +62,7 @@ export function buildOrganizationJsonLd(): Record<string, unknown> {
     sameAs: SOCIAL_LINKS,
     areaServed: [
       { '@type': 'City', name: 'Chiang Mai' },
-      ...getActiveMarkets().map((m) => ({
-        '@type': 'City',
-        name: m.customerFacingNameEn,
-      })),
+      { '@type': 'Country', name: 'Thailand' },
     ],
   };
 }

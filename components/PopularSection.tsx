@@ -92,7 +92,7 @@ export async function PopularSection({
 }: {
   lang: Locale;
   destinationId?: DeliveryDestinationId;
-  /** Catalog listing path, e.g. `/en/catalog` or `/en/catalog/pattaya`. */
+  /** Catalog listing path, e.g. `/en/catalog`. */
   catalogHref?: string;
   province?: ShopAccessProvince | null;
 }) {

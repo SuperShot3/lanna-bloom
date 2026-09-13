@@ -12,19 +12,25 @@ Each product has one indexable URL per language:
 - `/th/catalog/[slug]`
 - `/zh-hk/catalog/[slug]`
 
-The selected delivery region is **not** part of the product path. Store it in:
+The catalog listing also has one URL per language: `/[lang]/catalog`.
+
+The selected delivery region is **not** part of the product or catalog-listing path. Store it in:
 
 - cookie `lanna-bloom-delivery-region` (`DeliveryDestinationId`)
 - existing market session (`lanna-bloom-delivery-market`)
 
 Product pages, cards, and feeds must link to the clean catalog slug. Middleware 308s `/[lang]/catalog/[region]/[slug]` onto the clean URL and sets the cookie.
 
+City catalog listings `/[lang]/catalog/[market]` also **308** onto `/[lang]/catalog` and set the cookie. Internal shop CTAs must use `/[lang]/catalog`, never `/catalog/phuket`.
+
+City landings `/[lang]/[market]/flower-delivery` stay live for customers and ads. They are **operational**, not SEO pages, unless `seoIndexable` is explicitly true. Default: `noindex, follow`, omitted from the sitemap. Do not `robots.txt` Disallow them. Do not 301 them while they still serve customers/ads.
+
 Do **not**:
 
 - Reintroduce `/[lang]/catalog/[region]/[slug]` in internal links, sitemap, canonicals, or hreflang
+- Reintroduce indexable `/[lang]/catalog/[market]` listings
 - Put regional product URLs in JSON-LD `url`
-- Clear the region cookie when loading a clean product page
-
-Leave indexable city landings (`/[lang]/[market]/flower-delivery`) and market catalog listings (`/[lang]/catalog/[market]`) unchanged.
+- Put expansion city names in `/catalog` title/canonical when the cookie is another city
+- Clear the region cookie when loading a clean product page or the main catalog listing
 
 Checkout must recompute price and availability from catalog + destination. Never trust a client-submitted price.

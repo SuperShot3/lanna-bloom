@@ -13,7 +13,7 @@ The final operating workflow should be:
 5. Configure delivery timing and limitations.
 6. Allow customers to select the province and access the correct catalog.
 7. Display accurate coverage information.
-8. Publish a commercial SEO page when real ordering is available.
+8. Publish a commercial SEO page **only when that province is a genuinely distinct offering** (`seoIndexable`). Active service does not auto-publish Google indexing.
 
 The expansion should reduce operational stress and avoid promising capabilities before they are reliable.
 
@@ -320,9 +320,19 @@ A searchable or selectable province list must remain available because the map a
 
 # Feature 6 — Province SEO Landing Pages
 
+## Status — paused (Chiang Mai SEO refocus)
+
+Do **not** implement or enable Feature 6 for current expansion cities.
+
+Operational landings at `/{lang}/{city}/flower-delivery` already exist for customers and ads. They are `noindex, follow` until a market’s `seoIndexable` flag is explicitly true.
+
+**Active service ≠ Google indexing.** Opening a province (Tier B) must keep `seoIndexable: false` by default. Do not add city landings to the sitemap or assign city head terms (`flower delivery Phuket`, etc.) to those URLs.
+
+Re-enable indexing for one city only when it has a genuinely separate assortment, photos, content, and operations — see `docs/seo-keyword-map.md` (re-index gate).
+
 ## Goal
 
-Create reusable commercial landing pages for provinces where Lanna Bloom genuinely accepts orders or preorders.
+Create reusable commercial landing pages for provinces where Lanna Bloom genuinely accepts orders or preorders **and** the offering is distinct enough to index.
 
 These are not ordinary blog articles.
 

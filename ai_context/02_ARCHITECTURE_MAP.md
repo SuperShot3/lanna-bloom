@@ -20,7 +20,7 @@ Localized routes are URL-based (`/en/*`, `/th/*`). The language switcher should 
 | Area | Path |
 |------|------|
 | Home | `(main)/` or locale root |
-| Catalog | `catalog/`, `(markets)/[market]/catalog/` |
+| Catalog | `catalog/` (one listing URL; region is cookie + session). Legacy `catalog/[market]` 308s onto `/catalog`. City landings stay at `(markets)/[market]/flower-delivery` as operational/noindex pages. |
 | Product | `catalog/[slug]/` — one indexable URL per language. Region is cookie + session, never `/catalog/[region]/[slug]`. |
 | Cart | `cart/` |
 | Checkout | `checkout/complete`, `checkout/success`, `checkout/confirmation-pending` |
@@ -69,7 +69,7 @@ Shared UI: `app/admin/components/`.
 | `lib/supabase/` | Server client, admin/partner queries, order adapter |
 | `lib/bouquets.ts`, `lib/catalog.ts`, `lib/catalogReads.ts` | Catalog reads (Supabase) |
 | `lib/catalogWrite.ts`, `lib/catalogAdmin.ts` | Catalog writes + admin moderation |
-| `lib/delivery/` | Zones, markets, fees, hours. **Fee amounts:** only `zones.ts` (`ZONES_BY_DESTINATION` / `getZoneFee`). Landing map / distance table derive display fees via `amphoeDisplayFees.ts` + `distanceTiers.ts` — never duplicate THB amounts in amphoe map data. Product region: cookie `lanna-bloom-delivery-region` + session; do not reintroduce `/[lang]/catalog/[region]/[slug]`. |
+| `lib/delivery/` | Zones, markets, fees, hours. **Fee amounts:** only `zones.ts` (`ZONES_BY_DESTINATION` / `getZoneFee`). Landing map / distance table derive display fees via `amphoeDisplayFees.ts` + `distanceTiers.ts` — never duplicate THB amounts in amphoe map data. Product and catalog-listing region: cookie `lanna-bloom-delivery-region` + session; do not reintroduce `/[lang]/catalog/[region]/[slug]` or indexable `/[lang]/catalog/[market]`. `seoIndexable` is independent of shoppable `status`. |
 | `lib/adminRbac.ts` | Admin permissions |
 | `lib/i18n.ts` | Locale types/helpers |
 

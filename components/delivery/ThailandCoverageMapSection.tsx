@@ -11,6 +11,7 @@ import {
 } from '@/lib/provinces/statusColors';
 import {
   buildCoveragePanelDisplay,
+  destinationIdFromProvinceCode,
   filterProvincesBySearch,
   sortProvincesForCoverageList,
 } from '@/lib/delivery/coverageDisplay';
@@ -23,6 +24,7 @@ import {
 } from '@/lib/delivery/amphoeProvinces';
 import { amphoeMapFill } from '@/lib/delivery/amphoeDisplayFees';
 import { formatFeeRange } from '@/lib/delivery/distanceTiers';
+import { applyDestinationToMarketSession } from '@/lib/delivery/marketSession';
 import Link from 'next/link';
 
 const ThailandProvinceMap = dynamic(
@@ -230,6 +232,10 @@ export function ThailandCoverageMapSection({
               <Link
                 href={selectedCoverage.catalogHref}
                 className="btn-premium mt-2.5 !min-h-0 h-auto py-1.5 px-3 text-[11px] rounded-lg"
+                onClick={() => {
+                  const dest = destinationIdFromProvinceCode(selectedProvince.province_code);
+                  if (dest) applyDestinationToMarketSession(dest);
+                }}
               >
                 {isTh ? 'ดูแคตตาล็อก' : 'Browse catalog'}
               </Link>

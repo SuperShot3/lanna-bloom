@@ -249,7 +249,7 @@ const phuketLinks = buildMarketLocalLinks({
   lang: 'en',
   city: 'Phuket',
   destinationId: 'PHUKET',
-  catalogHref: '/en/catalog/phuket',
+  catalogHref: '/en/catalog',
 });
 assert.ok(
   phuketLinks.some((l) => l.href.includes('/info/flower-delivery-phuket')),
@@ -264,7 +264,7 @@ const krabiLinks = buildMarketLocalLinks({
   lang: 'en',
   city: 'Krabi / Ao Nang',
   destinationId: 'KRABI',
-  catalogHref: '/en/catalog/krabi',
+  catalogHref: '/en/catalog',
 });
 assert.ok(
   !krabiLinks.some((l) => l.href.includes('/info/')),
@@ -346,7 +346,7 @@ for (const market of getActiveMarkets()) {
       lang,
       city,
       destinationId: market.destinationId,
-      catalogHref: `/${lang}/catalog/${market.pathSlug}`,
+      catalogHref: `/${lang}/catalog`,
     });
     const faq = getMarketHomeFaqItems({
       lang,

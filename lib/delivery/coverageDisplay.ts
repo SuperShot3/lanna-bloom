@@ -13,6 +13,7 @@ import {
 import { catalogHrefForProvinceCode } from '@/lib/delivery/marketRoute';
 import {
   getActiveMarkets,
+  parseDeliveryDestinationId,
   type DeliveryDestinationId,
 } from '@/lib/delivery/markets';
 import { getCheckoutZonesForDestination, getZoneFee } from '@/lib/delivery/zones';
@@ -22,6 +23,14 @@ import { getProvinceStatusLabelLocalized } from '@/lib/provinces/statusColors';
 import type { ProvinceStatus } from '@/lib/provinces/types';
 
 export { catalogHrefForProvinceCode };
+
+/** Checkout destination for a province code, if that province is a wired market. */
+export function destinationIdFromProvinceCode(
+  provinceCode: string
+): DeliveryDestinationId | null {
+  const seed = PROVINCE_SEED_ROSTER.find((r) => r.province_code === provinceCode);
+  return parseDeliveryDestinationId(seed?.destination_id) ?? null;
+}
 
 export type CoverageProvinceInput = {
   province_code: string;

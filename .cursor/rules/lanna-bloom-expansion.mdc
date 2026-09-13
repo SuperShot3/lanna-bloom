@@ -24,7 +24,7 @@ Opening a province should eventually require only:
 3. Connect suitable partners.
 4. Enable the supported catalog.
 5. Publish accurate customer-facing delivery information.
-6. Publish an SEO landing page when real service is available.
+6. Keep the operational city landing `noindex` unless `seoIndexable` is explicitly approved (active service does not auto-publish Google indexing).
 
 Possible province service levels include:
 

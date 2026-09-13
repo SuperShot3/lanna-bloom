@@ -52,11 +52,19 @@ export interface MarketRegistryEntry {
   customerFacingNameEn: string;
   customerFacingNameTh: string;
   /**
-   * active → indexable + sitemap + nav as delivery location
+   * active → shoppable + nav as a delivery location (does not imply Google indexing)
    * coming_soon → noindex,follow; excluded from sitemap; optional teaser in nav
    * disabled → route unavailable (notFound)
    */
   status: CityStatus;
+  /**
+   * When true, the operational city landing may appear in Google Search and the
+   * sitemap. Independent of `status`: a city can be shoppable and still
+   * `seoIndexable: false` while SEO stays concentrated on Chiang Mai.
+   * Flip to true only when that city is a genuinely distinct offering
+   * (assortment, photos, content, operations). Default / omit = not indexed.
+   */
+  seoIndexable?: boolean;
   /** Optional SEO overrides for the city landing page */
   seoTitleEn?: string;
   seoTitleTh?: string;
@@ -77,6 +85,7 @@ export const MARKETS: MarketRegistryEntry[] = [
     customerFacingNameEn: 'Bangkok',
     customerFacingNameTh: 'กรุงเทพฯ',
     status: 'active',
+    seoIndexable: false,
   },
   {
     pathSlug: 'pattaya',
@@ -84,6 +93,7 @@ export const MARKETS: MarketRegistryEntry[] = [
     customerFacingNameEn: 'Pattaya',
     customerFacingNameTh: 'พัทยา',
     status: 'active',
+    seoIndexable: false,
   },
   {
     pathSlug: 'phuket',
@@ -91,6 +101,7 @@ export const MARKETS: MarketRegistryEntry[] = [
     customerFacingNameEn: 'Phuket',
     customerFacingNameTh: 'ภูเก็ต',
     status: 'active',
+    seoIndexable: false,
   },
   {
     pathSlug: 'krabi',
@@ -98,6 +109,7 @@ export const MARKETS: MarketRegistryEntry[] = [
     customerFacingNameEn: 'Krabi / Ao Nang',
     customerFacingNameTh: 'กระบี่ / อ่าวนาง',
     status: 'active',
+    seoIndexable: false,
   },
   {
     pathSlug: 'samui',
@@ -105,6 +117,7 @@ export const MARKETS: MarketRegistryEntry[] = [
     customerFacingNameEn: 'Koh Samui',
     customerFacingNameTh: 'เกาะสมุย',
     status: 'active',
+    seoIndexable: false,
   },
   {
     pathSlug: 'hua-hin',
@@ -112,6 +125,7 @@ export const MARKETS: MarketRegistryEntry[] = [
     customerFacingNameEn: 'Hua Hin',
     customerFacingNameTh: 'หัวหิน',
     status: 'active',
+    seoIndexable: false,
   },
   {
     pathSlug: 'lamphun',
@@ -119,6 +133,7 @@ export const MARKETS: MarketRegistryEntry[] = [
     customerFacingNameEn: 'Lamphun',
     customerFacingNameTh: 'ลำพูน',
     status: 'active',
+    seoIndexable: false,
   },
   {
     pathSlug: 'pai',
@@ -126,6 +141,7 @@ export const MARKETS: MarketRegistryEntry[] = [
     customerFacingNameEn: 'Pai',
     customerFacingNameTh: 'ปาย',
     status: 'active',
+    seoIndexable: false,
     heroLocationNameEn: 'Pai, Mae Hong Son',
     heroLocationNameTh: 'ปาย แม่ฮ่องสอน',
     seoTitleEn: 'Flower delivery Pai, Mae Hong Son | Lanna Bloom',
@@ -159,11 +175,11 @@ export function isExpansionDestination(id: DeliveryDestinationId): boolean {
 }
 
 export function marketIsIndexable(market: MarketRegistryEntry): boolean {
-  return market.status === 'active';
+  return market.status === 'active' && market.seoIndexable === true;
 }
 
 export function marketIsSitemapEnabled(market: MarketRegistryEntry): boolean {
-  return market.status === 'active';
+  return marketIsIndexable(market);
 }
 
 export function marketIsNavSelectable(market: MarketRegistryEntry): boolean {

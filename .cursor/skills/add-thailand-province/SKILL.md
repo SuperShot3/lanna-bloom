@@ -64,16 +64,16 @@ Edit in this order:
 2. **Migration** — regenerate or add a follow-up migration via [`scripts/generate-provinces-migration.ts`](../../../scripts/generate-provinces-migration.ts) / documented DB update so production `provinces.destination_id` matches.
 3. **Destinations / markets** — [`lib/delivery/markets.ts`](../../../lib/delivery/markets.ts):
    - Add to `DELIVERY_DESTINATIONS` if new.
-   - Add `MARKETS` entry (`pathSlug`, names, `status: 'active'`) for Header/Footer/sitemap (Chiang Mai uses main catalog — no market path slug).
+   - Add `MARKETS` entry (`pathSlug`, names, `status: 'active'`, **`seoIndexable: false`**) for Header/Footer. Do **not** set `seoIndexable: true` unless explicitly approved after the re-index quality gate. Chiang Mai uses the main catalog — no market path slug.
 4. **Zones / fees** — [`lib/delivery/zones.ts`](../../../lib/delivery/zones.ts): at least one zone under `ZONES_BY_DESTINATION` (`getZoneFee` is fee SoT).
-5. **SEO landing** — market route `app/[lang]/(markets)/[market]/flower-delivery/` works once `MARKETS` is wired.
+5. **Operational landing** — market route `app/[lang]/(markets)/[market]/flower-delivery/` works once `MARKETS` is wired. It is a customer/ads page, **not** an SEO page, while `seoIndexable` is false (`noindex, follow`, omitted from sitemap). Shop CTAs must go to `/{lang}/catalog` (delivery-region cookie), never `/{lang}/catalog/{market}`.
 6. **Coverage page content (required)** — update [`lib/landingPages/flowerDeliveryThailand.ts`](../../../lib/landingPages/flowerDeliveryThailand.ts) + [`app/[lang]/delivery-areas-thailand/page.tsx`](../../../app/[lang]/delivery-areas-thailand/page.tsx):
    - Active `MARKETS` feed `listShoppableCoverageAreas()` (join by `destination_id`).
    - Summaries are **dynamic** (`status · categories · from ฿minFee`) via `formatShoppableProvinceSummary` — do **not** hardcode market blurbs like “Bouquet delivery only”.
    - Do **not** append the new province to page-level `mapHint`, `intro`, `areasTitle`, or meta. Those stay Chiang Mai–core / generic (map: tap a province for status; intro: Chiang Mai is the core; other markets live in their own sections below). Listing every market in the intro duplicates those sections.
    - Add **province-section copy only** (`{market}Title`, `{market}Intro`, `{market}Note`, CTA) with honest service level + fee floor.
    - If the province has named amphoes/localities for SEO, add a district helper (mirror `getLamphunDeliveryDistricts`) and a visible **province section** on the coverage page.
-   - **Shop CTA placement:** put a `btn-premium` shop link **inside that province section** (title → intro → CTA → amphoe/locality list). Do **not** add province shop buttons to the page hero or the shared browse-link row. Mirror Chiang Mai (`/{lang}/catalog`) and Lamphun (`/{lang}/{slug}/flower-delivery`).
+   - **Shop CTA placement:** put a `btn-premium` shop link **inside that province section** (title → intro → CTA → amphoe/locality list). Do **not** add province shop buttons to the page hero or the shared browse-link row. Shop CTAs go to the operational landing (`/{lang}/{slug}/flower-delivery`) or `/{lang}/catalog` with the region cookie — never `/{lang}/catalog/{market}`.
 7. **Partner apply** — already lists all DB provinces; no duplicate roster.
 8. Run validate; test Header destination picker, coverage map, shoppable list, province-section CTAs, and admin edit for that province.
 9. Finish messaging / catalog_enabled / timing in **`/admin/provinces`**.

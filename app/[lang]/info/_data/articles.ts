@@ -713,6 +713,7 @@ export const articles: ArticleMeta[] = [
   },
   {
     slug: 'flower-delivery-lamphun-province',
+    noindex: true,
     title: 'Flower Delivery Across Lamphun Province: Areas, Times & Fees',
     excerpt:
       'Flower delivery across Lamphun’s eight amphoes: typical fees from 250 THB, same-day honesty by area, and how to order online from Thailand or abroad.',
@@ -749,6 +750,7 @@ export const articles: ArticleMeta[] = [
   },
   {
     slug: 'flower-delivery-bangkok',
+    noindex: true,
     title: 'Flower Delivery in Bangkok: Areas, Hotels and Fees',
     excerpt:
       'You can order flower delivery in Bangkok online. See areas and fees from 250 THB, hotel and condo tips, and how same-day works. Shop the Bangkok catalog.',
@@ -782,6 +784,7 @@ export const articles: ArticleMeta[] = [
   },
   {
     slug: 'flower-delivery-pattaya',
+    noindex: true,
     title: 'Flower Delivery in Pattaya: Areas, Hotels and Fees',
     excerpt:
       'Flower delivery in Pattaya: zones from Central Pattaya to Jomtien and Nong Prue, fees from 250 THB, hotel tips, and how to order from Thailand or abroad.',
@@ -818,6 +821,7 @@ export const articles: ArticleMeta[] = [
   },
   {
     slug: 'flower-delivery-phuket',
+    noindex: true,
     title: 'Flower Delivery in Phuket: Areas, Hotels and Fees',
     excerpt:
       'Flower delivery in Phuket: listed areas from Town to Patong, Kata, and Mai Khao. Fees from 250 THB, hotel tips, and how to order from Thailand or abroad.',
@@ -856,6 +860,7 @@ export const articles: ArticleMeta[] = [
   },
   {
     slug: 'flower-delivery-hua-hin',
+    noindex: true,
     title: 'Flower Delivery in Hua Hin: Areas, Hotels and Fees',
     excerpt:
       'Flower delivery in Hua Hin: listed areas from the beach to Khao Takiab and Thap Tai. Fees from 250 THB, hotel tips, and how to order from Thailand or abroad.',
@@ -892,6 +897,7 @@ export const articles: ArticleMeta[] = [
   },
   {
     slug: 'flower-delivery-samui',
+    noindex: true,
     title: 'Flower Delivery in Koh Samui: Areas, Hotels and Fees',
     excerpt:
       'Flower delivery in Koh Samui: listed areas from Chaweng to Lamai and Na Thon. Fees from 250 THB; hillside and 4x4 mountain pins cost more. Hotel tips and how to order from Thailand or abroad.',
@@ -930,6 +936,7 @@ export const articles: ArticleMeta[] = [
   },
   {
     slug: 'flower-delivery-pai',
+    noindex: true,
     title: 'Flower Delivery in Pai: Areas, Hotels and Fees',
     excerpt:
       'Flower delivery in Pai from Chiang Mai: listed tambons, standard 550 THB fee, 50% item markup, hotel and Maps-pin tips, and how to order from Thailand or abroad.',
@@ -968,6 +975,7 @@ export const articles: ArticleMeta[] = [
   },
   {
     slug: 'flower-delivery-to-hospitals-phuket',
+    noindex: true,
     title: 'Flower Delivery to Hospitals in Phuket',
     excerpt:
       'Send flowers to Phuket hospitals including Bangkok Hospital, Mission, Vachira, Chalong, Patong, and Thalang. Patient details, drop-off tips, and how to order.',

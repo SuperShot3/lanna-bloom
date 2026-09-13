@@ -106,9 +106,7 @@ export function Header({
     ? `/${lang}/${effectiveMarket.pathSlug}/flower-delivery`
     : null;
   const homeHref = marketFlowerDeliveryHref ?? `/${lang}`;
-  const catalogHref = effectiveMarket
-    ? `/${lang}/catalog/${effectiveMarket.pathSlug}`
-    : `/${lang}/catalog`;
+  const catalogHref = `/${lang}/catalog`;
   const cartHref = `/${lang}/cart`;
   const aboutHref = `/${lang}/about`;
   const deliveryAreasHref = `/${lang}/delivery-areas-thailand`;

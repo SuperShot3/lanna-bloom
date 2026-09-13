@@ -100,12 +100,12 @@ assert(
   'CM catalog href'
 );
 assert(
-  catalogHrefForDestination('en', 'PHUKET') === '/en/catalog/phuket',
-  'Phuket catalog href'
+  catalogHrefForDestination('en', 'PHUKET') === '/en/catalog',
+  'Phuket catalog href is the single catalog URL'
 );
 assert(
-  catalogHrefForDestination('th', 'BANGKOK') === '/th/catalog/bangkok',
-  'Bangkok catalog href uses lang'
+  catalogHrefForDestination('th', 'BANGKOK') === '/th/catalog',
+  'Bangkok catalog href uses lang and the single catalog URL'
 );
 
 console.log('deliveryDestinationPrompt.test.ts: ok');

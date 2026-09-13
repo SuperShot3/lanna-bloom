@@ -2,7 +2,7 @@ import { auth } from '@/auth';
 import { applyAttributionCookies } from '@/lib/attribution/middlewareCapture';
 import { applyDeliveryRegionCookie } from '@/lib/delivery/deliveryRegionCookie';
 import {
-  matchPrettyMarketCatalogRewrite,
+  matchPrettyMarketCatalogRedirect,
   matchRegionalProductRedirect,
   matchUglyMarketCatalogRedirect,
 } from '@/lib/delivery/regionalProductRedirect';
@@ -81,30 +81,24 @@ function applyRegionalProductRedirect(
 }
 
 /**
- * Public city catalogs are /[lang]/catalog/[market]. The nested /catalog page
- * is only the dynamic renderer (product ISR cannot share that segment).
+ * Public catalogs are /[lang]/catalog. City listing URLs 308 onto that path
+ * and store the region in the delivery cookie.
  */
 function applyMarketCatalogListing(
   req: NextRequest,
   incoming?: NextResponse
 ): NextResponse | undefined {
-  const ugly = matchUglyMarketCatalogRedirect(req.nextUrl.pathname);
-  if (ugly) {
-    const dest = req.nextUrl.clone();
-    dest.pathname = ugly.targetPath;
-    const redirect = NextResponse.redirect(dest, 308);
-    if (incoming) copyCookies(incoming, redirect);
-    return redirect;
-  }
-
-  const pretty = matchPrettyMarketCatalogRewrite(req.nextUrl.pathname);
-  if (!pretty) return incoming;
+  const listing =
+    matchUglyMarketCatalogRedirect(req.nextUrl.pathname) ??
+    matchPrettyMarketCatalogRedirect(req.nextUrl.pathname);
+  if (!listing) return incoming;
 
   const dest = req.nextUrl.clone();
-  dest.pathname = pretty.targetPath;
-  const rewrite = NextResponse.rewrite(dest);
-  if (incoming) copyCookies(incoming, rewrite);
-  return rewrite;
+  dest.pathname = listing.targetPath;
+  const redirect = NextResponse.redirect(dest, 308);
+  if (incoming) copyCookies(incoming, redirect);
+  applyDeliveryRegionCookie(redirect, listing.destinationId);
+  return redirect;
 }
 
 export default auth((req) => {

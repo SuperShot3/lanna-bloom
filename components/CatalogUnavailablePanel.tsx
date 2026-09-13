@@ -1,7 +1,10 @@
+'use client';
+
 import type { Locale } from '@/lib/i18n';
 import type { PublicProvince } from '@/lib/provinces/types';
 import { getProvinceStatusLabel } from '@/lib/provinces/statusColors';
 import type { ProvinceStatus } from '@/lib/provinces/types';
+import { applyDestinationToMarketSession } from '@/lib/delivery/marketSession';
 
 /**
  * Shown when a market catalog route is reachable but province config
@@ -94,6 +97,7 @@ export function CatalogUnavailablePanel({
       <p style={{ margin: '1.25rem 0 0' }}>
         <a
           href={`/${lang}/catalog`}
+          onClick={() => applyDestinationToMarketSession('CHIANG_MAI')}
           style={{
             display: 'inline-flex',
             alignItems: 'center',

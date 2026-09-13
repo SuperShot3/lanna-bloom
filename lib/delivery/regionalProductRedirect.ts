@@ -65,6 +65,7 @@ export function matchRegionalProductRedirect(
 export type MarketCatalogListingMatch = {
   lang: string;
   marketSlug: string;
+  destinationId: DeliveryDestinationId;
   targetPath: string;
 };
 
@@ -73,8 +74,23 @@ function storefrontPathParts(pathname: string): string[] {
   return trimmed.split('/').filter(Boolean);
 }
 
+function listingMatch(
+  lang: string,
+  marketSlug: string
+): MarketCatalogListingMatch | null {
+  if (!isMarketPathSlug(marketSlug)) return null;
+  const market = getMarketByPathSlug(marketSlug);
+  if (!market) return null;
+  return {
+    lang,
+    marketSlug,
+    destinationId: market.destinationId,
+    targetPath: `/${lang}/catalog`,
+  };
+}
+
 /**
- * 308 /[lang]/catalog/[market]/catalog onto the public listing URL.
+ * 308 /[lang]/catalog/[market]/catalog onto the single catalog listing.
  * Query string is preserved by the caller (clone nextUrl, set pathname).
  */
 export function matchUglyMarketCatalogRedirect(
@@ -86,37 +102,33 @@ export function matchUglyMarketCatalogRedirect(
   if (!lang || !STOREFRONT_LANGS.has(lang) || a !== 'catalog' || c !== 'catalog') {
     return null;
   }
-  if (!b || !isMarketPathSlug(b)) return null;
-  return {
-    lang,
-    marketSlug: b,
-    targetPath: `/${lang}/catalog/${b}`,
-  };
+  if (!b) return null;
+  return listingMatch(lang, b);
 }
 
 /**
- * Rewrite /[lang]/catalog/[market] onto the nested dynamic listing page.
- * Does not match product PDPs (third segment is not a market slug).
+ * 308 /[lang]/catalog/[market] onto the single catalog listing and set the
+ * delivery-region cookie. Does not match product PDPs (third segment is not a
+ * market slug).
  */
-export function matchPrettyMarketCatalogRewrite(
+export function matchPrettyMarketCatalogRedirect(
   pathname: string
 ): MarketCatalogListingMatch | null {
   const parts = storefrontPathParts(pathname);
   if (parts.length !== 3) return null;
   const [lang, a, b] = parts;
   if (!lang || !STOREFRONT_LANGS.has(lang) || a !== 'catalog' || !b) return null;
-  if (!isMarketPathSlug(b)) return null;
-  return {
-    lang,
-    marketSlug: b,
-    targetPath: `/${lang}/catalog/${b}/catalog`,
-  };
+  return listingMatch(lang, b);
 }
 
-/** Strip the internal listing tail so client navigations stay on the public URL. */
+/** @deprecated Use matchPrettyMarketCatalogRedirect — listings 308 onto /catalog. */
+export const matchPrettyMarketCatalogRewrite = matchPrettyMarketCatalogRedirect;
+
+/** Strip leftover city listing tails so client navigations stay on /catalog. */
 export function publicStorefrontPathname(pathname: string): string {
-  const ugly = matchUglyMarketCatalogRedirect(pathname);
-  return ugly?.targetPath ?? pathname;
+  const listing =
+    matchUglyMarketCatalogRedirect(pathname) ?? matchPrettyMarketCatalogRedirect(pathname);
+  return listing?.targetPath ?? pathname;
 }
 
 /** True when this path is a product PDP (clean or still-regional) for the locale. */
@@ -131,18 +143,16 @@ export function isStorefrontCatalogProductPath(pathname: string, lang: string): 
 
 /**
  * Paths that must keep the selected delivery region (cookie + session).
- * Home and the Chiang Mai catalog listing are excluded so they can still
- * clear sessionStorage; the persistent cookie is not cleared there.
+ * Home is excluded so it can still clear sessionStorage; the persistent cookie
+ * is not cleared there. The main catalog listing keeps the region.
  */
 export function shouldPreserveDeliveryRegionOnPath(pathname: string, lang: string): boolean {
   const parts = pathname.split('/').filter(Boolean);
   if (parts[0] !== lang) return false;
   const second = parts[1];
-  const third = parts[2];
 
   if (second === 'cart' || second === 'checkout' || second === 'track-order') return true;
-  if (second === 'catalog' && third && isMarketPathSlug(third)) return true;
-  if (second === 'catalog' && third && !isMarketPathSlug(third)) return true;
+  if (second === 'catalog') return true;
   if (second && isMarketPathSlug(second)) return true;
   return false;
 }

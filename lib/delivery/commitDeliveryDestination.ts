@@ -15,14 +15,9 @@ export const DEFAULT_DELIVERY_DESTINATION_ID: DeliveryDestinationId = 'CHIANG_MA
 
 export function catalogHrefForDestination(
   lang: string,
-  destinationId: DeliveryDestinationId
+  _destinationId: DeliveryDestinationId
 ): string {
-  if (destinationId === DEFAULT_DELIVERY_DESTINATION_ID) {
-    return `/${lang}/catalog`;
-  }
-  const market = getNavMarkets().find((m) => m.destinationId === destinationId);
-  if (!market) return `/${lang}/catalog`;
-  return buildMarketCatalogHref(lang, market.pathSlug);
+  return buildMarketCatalogHref(lang);
 }
 
 export function commitDeliveryDestination(
@@ -41,16 +36,29 @@ export function commitDeliveryDestination(
   if (!market) {
     applyDestinationToMarketSession(DEFAULT_DELIVERY_DESTINATION_ID);
     if (options.navigate !== false) {
-      options.router.push(
-        catalogHrefForDestination(options.lang, DEFAULT_DELIVERY_DESTINATION_ID)
-      );
+      navigateToCatalog(options.lang, options.router);
     }
     return { pathSlug: null };
   }
 
   applyDestinationToMarketSession(market.destinationId);
   if (options.navigate !== false) {
-    options.router.push(catalogHrefForDestination(options.lang, market.destinationId));
+    navigateToCatalog(options.lang, options.router);
   }
   return { pathSlug: market.pathSlug };
+}
+
+function navigateToCatalog(
+  lang: string,
+  router: { push: (href: string) => void }
+): void {
+  const href = catalogHrefForDestination(lang, DEFAULT_DELIVERY_DESTINATION_ID);
+  if (typeof window !== 'undefined') {
+    const current = window.location.pathname.replace(/\/$/, '') || '/';
+    if (current === href.replace(/\/$/, '')) {
+      window.location.reload();
+      return;
+    }
+  }
+  router.push(href);
 }

@@ -8,7 +8,7 @@ import {
 import { articles } from '@/app/[lang]/info/_data/articles';
 import type { ArticleMeta } from '@/app/[lang]/info/_data/articles';
 import { getCollectionLandingPages } from '@/lib/landingPages/collectionLandingPages';
-import { getActiveMarkets } from '@/lib/delivery/markets';
+import { getActiveMarkets, marketIsSitemapEnabled } from '@/lib/delivery/markets';
 import { isArticleSeoLocale, SEO_LOCALES } from '@/lib/seo/alternates';
 
 type SitemapChangeFrequency = NonNullable<MetadataRoute.Sitemap[number]['changeFrequency']>;
@@ -66,6 +66,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
 
     for (const market of activeMarkets) {
+      if (!marketIsSitemapEnabled(market)) continue;
       pushEntry(entries, `${base}/${lang}/${market.pathSlug}/flower-delivery`, {
         changeFrequency: 'weekly',
         priority: 0.68,

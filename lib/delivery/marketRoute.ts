@@ -1,23 +1,14 @@
-import {
-  getMarketByDestinationId,
-  isMarketPathSlug,
-  type MarketPathSlug,
-} from '@/lib/delivery/markets';
-import { PROVINCE_SEED_ROSTER } from '@/lib/provinces/seedRoster';
+import { isMarketPathSlug, type MarketPathSlug } from '@/lib/delivery/markets';
 
 /**
- * Catalog entry for a province code via seed destination → market slug.
- * Does not put destination_id on PublicProvince (Feature 4 / tests omit it).
+ * Catalog listing URL for a province. One catalog for all regions; the
+ * delivery-region cookie (not the path) selects price and availability.
  */
 export function catalogHrefForProvinceCode(
   lang: string,
-  provinceCode: string
+  _provinceCode: string
 ): string {
-  const seed = PROVINCE_SEED_ROSTER.find((r) => r.province_code === provinceCode);
-  const dest = seed?.destination_id;
-  if (!dest || dest === 'CHIANG_MAI') return `/${lang}/catalog`;
-  const market = getMarketByDestinationId(dest);
-  return buildMarketCatalogHref(lang, market?.pathSlug);
+  return `/${lang}/catalog`;
 }
 
 /**
@@ -34,17 +25,14 @@ export function buildMarketHomeHref(
 }
 
 /**
- * Market catalog listing: expansion → /{lang}/catalog/{market}; otherwise CM catalog.
+ * Catalog listing: one URL per language. Delivery region lives in cookie/session.
  */
 export function buildMarketCatalogHref(
   lang: string,
-  marketSlug: MarketPathSlug | string | null | undefined,
+  _marketSlug?: MarketPathSlug | string | null | undefined,
   search?: string
 ): string {
-  const path =
-    marketSlug && isMarketPathSlug(marketSlug)
-      ? `/${lang}/catalog/${marketSlug}`
-      : `/${lang}/catalog`;
+  const path = `/${lang}/catalog`;
   if (!search) return path;
   const q = search.startsWith('?') ? search : `?${search}`;
   return `${path}${q}`;

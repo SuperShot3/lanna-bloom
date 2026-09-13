@@ -13,7 +13,7 @@ import { parseDeliveryRegionCookie } from '@/lib/delivery/deliveryRegionCookie';
 import {
   isStorefrontCatalogProductPath,
   isStorefrontCheckoutPath,
-  matchPrettyMarketCatalogRewrite,
+  matchPrettyMarketCatalogRedirect,
   matchRegionalProductRedirect,
   matchUglyMarketCatalogRedirect,
   publicStorefrontPathname,
@@ -47,7 +47,7 @@ function fail(msg: string): never {
   assert.equal(match!.destinationId, 'KRABI');
 }
 
-assert.equal(matchRegionalProductRedirect('/en/catalog/krabi'), null, 'listing not redirected');
+assert.equal(matchRegionalProductRedirect('/en/catalog/krabi'), null, 'listing not redirected as a product');
 assert.equal(
   matchRegionalProductRedirect('/en/catalog/krabi/catalog'),
   null,
@@ -57,14 +57,16 @@ assert.equal(
 {
   const ugly = matchUglyMarketCatalogRedirect('/en/catalog/samui/catalog');
   assert.ok(ugly, 'doubled catalog listing matches 308');
-  assert.equal(ugly!.targetPath, '/en/catalog/samui');
+  assert.equal(ugly!.targetPath, '/en/catalog');
   assert.equal(ugly!.marketSlug, 'samui');
+  assert.equal(ugly!.destinationId, 'SAMUI');
 }
 
 {
   const uglyQs = matchUglyMarketCatalogRedirect('/th/catalog/phuket/catalog?types=rose');
   assert.ok(uglyQs);
-  assert.equal(uglyQs!.targetPath, '/th/catalog/phuket');
+  assert.equal(uglyQs!.targetPath, '/th/catalog');
+  assert.equal(uglyQs!.destinationId, 'PHUKET');
 }
 
 assert.equal(
@@ -79,39 +81,40 @@ assert.equal(
 );
 
 {
-  const rewrite = matchPrettyMarketCatalogRewrite('/en/catalog/samui');
-  assert.ok(rewrite, 'pretty market listing matches rewrite');
-  assert.equal(rewrite!.targetPath, '/en/catalog/samui/catalog');
+  const rewrite = matchPrettyMarketCatalogRedirect('/en/catalog/samui');
+  assert.ok(rewrite, 'pretty market listing matches 308 onto /catalog');
+  assert.equal(rewrite!.targetPath, '/en/catalog');
   assert.equal(rewrite!.marketSlug, 'samui');
+  assert.equal(rewrite!.destinationId, 'SAMUI');
 }
 
 {
-  const pai = matchPrettyMarketCatalogRewrite('/zh-hk/catalog/pai');
+  const pai = matchPrettyMarketCatalogRedirect('/zh-hk/catalog/pai');
   assert.ok(pai, 'pai and zh-hk are covered');
-  assert.equal(pai!.targetPath, '/zh-hk/catalog/pai/catalog');
+  assert.equal(pai!.targetPath, '/zh-hk/catalog');
 }
 
 assert.equal(
-  matchPrettyMarketCatalogRewrite('/en/catalog/red-roses'),
+  matchPrettyMarketCatalogRedirect('/en/catalog/red-roses'),
   null,
   'product PDP is not rewritten'
 );
 assert.equal(
-  matchPrettyMarketCatalogRewrite('/en/catalog/krabi/catalog'),
+  matchPrettyMarketCatalogRedirect('/en/catalog/krabi/catalog'),
   null,
   'ugly listing is 308d, not rewritten'
 );
 assert.equal(
-  matchPrettyMarketCatalogRewrite('/en/catalog'),
+  matchPrettyMarketCatalogRedirect('/en/catalog'),
   null,
   'Chiang Mai catalog is not rewritten'
 );
 
 assert.equal(
   publicStorefrontPathname('/en/catalog/samui/catalog'),
-  '/en/catalog/samui'
+  '/en/catalog'
 );
-assert.equal(publicStorefrontPathname('/en/catalog/samui'), '/en/catalog/samui');
+assert.equal(publicStorefrontPathname('/en/catalog/samui'), '/en/catalog');
 assert.equal(publicStorefrontPathname('/en/catalog/red-roses'), '/en/catalog/red-roses');
 assert.equal(
   matchRegionalProductRedirect('/en/krabi/flower-delivery'),
@@ -155,7 +158,7 @@ assert.equal(shouldPreserveDeliveryRegionOnPath('/en/krabi/flower-delivery', 'en
 assert.equal(shouldPreserveDeliveryRegionOnPath('/en/cart', 'en'), true);
 assert.equal(shouldPreserveDeliveryRegionOnPath('/en/checkout/complete', 'en'), true);
 assert.equal(shouldPreserveDeliveryRegionOnPath('/en', 'en'), false);
-assert.equal(shouldPreserveDeliveryRegionOnPath('/en/catalog', 'en'), false);
+assert.equal(shouldPreserveDeliveryRegionOnPath('/en/catalog', 'en'), true);
 
 assert.equal(isStorefrontCatalogProductPath('/en/catalog/red-roses', 'en'), true);
 assert.equal(isStorefrontCatalogProductPath('/en/catalog', 'en'), false);

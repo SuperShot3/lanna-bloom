@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import {
   getCatalogBouquetsCatalogData,
@@ -8,6 +9,8 @@ import type { CatalogProduct } from '@/lib/catalog/types';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { CatalogWithFilters } from '@/components/CatalogWithFilters';
+import { CatalogUnavailablePanel } from '@/components/CatalogUnavailablePanel';
+import { CatalogDeliveryBar } from '@/components/CatalogDeliveryBar';
 import { CATEGORY_I18N_KEYS, PRODUCT_CATEGORIES } from '@/lib/catalogCategories';
 import { parseCatalogSearchParams } from '@/lib/catalogFilterParams';
 import { flowerTypeCatalogTitle } from '@/lib/catalog/flowerTypeTitle';
@@ -19,9 +22,20 @@ import {
   websiteOpenGraph,
   websiteTwitter,
 } from '@/lib/seo/shareMetadata';
+import {
+  DELIVERY_REGION_COOKIE,
+  parseDeliveryRegionCookie,
+} from '@/lib/delivery/deliveryRegionCookie';
+import {
+  destinationDisplayName,
+  isExpansionDestination,
+  type DeliveryDestinationId,
+} from '@/lib/delivery/markets';
+import { getPublicProvinceByDestinationId } from '@/lib/provinces/queries';
+import { canEnterCatalog, categoryAllowed } from '@/lib/provinces/shopAccess';
 
-// Revalidate catalog every 60 seconds so new flowers appear without rebuild
-export const revalidate = 60;
+/** Cookie-aware listing — must not cache a Phuket grid under Chiang Mai metadata. */
+export const dynamic = 'force-dynamic';
 
 const BALLOONS_SEO = {
   en: {
@@ -66,6 +80,12 @@ function catalogSeoForLang(
   if (locale === 'th') return seo.th;
   if (locale === 'zh-hk') return seo['zh-hk'];
   return seo.en;
+}
+
+function catalogDestinationFromCookies(): DeliveryDestinationId {
+  return (
+    parseDeliveryRegionCookie(cookies().get(DELIVERY_REGION_COOKIE)?.value) ?? 'CHIANG_MAI'
+  );
 }
 
 export async function generateMetadata({
@@ -124,21 +144,47 @@ export default async function CatalogPage({
 }) {
   const lang = params.lang;
   if (!isValidLocale(lang)) notFound();
+  const locale = lang as Locale;
+  const destinationId = catalogDestinationFromCookies();
+  const expansion = isExpansionDestination(destinationId);
+  const provinceResult = await getPublicProvinceByDestinationId(destinationId);
+  const province = provinceResult.ok ? provinceResult.province : null;
+  const marketName = destinationDisplayName(destinationId, locale);
+
+  if (!canEnterCatalog(province)) {
+    return (
+      <div className="catalog-page">
+        <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div style={{ margin: '1.25rem auto 0', maxWidth: 1040 }}>
+            <CatalogDeliveryBar lang={locale} />
+          </div>
+          <CatalogUnavailablePanel lang={locale} marketName={marketName} province={province} />
+        </div>
+      </div>
+    );
+  }
+
   const filterParams = parseCatalogSearchParams(searchParams);
   const nameSearchQueryParam = searchParams.q;
   const nameSearchQuery = Array.isArray(nameSearchQueryParam)
     ? nameSearchQueryParam[0] ?? ''
     : nameSearchQueryParam ?? '';
   const topCategory = filterParams.topCategory || 'flowers';
+  const categoryOk = categoryAllowed(province, topCategory, {
+    isExpansionDestination: expansion,
+  });
 
   let bouquets: Bouquet[] = [];
   let allBouquetsForFacets: Bouquet[] = [];
   let products: CatalogProduct[] = [];
 
-  if (topCategory === 'flowers') {
+  if (!categoryOk) {
+    bouquets = [];
+    products = [];
+  } else if (topCategory === 'flowers') {
     const data = await getCatalogBouquetsCatalogData({
       ...filterParams,
-      catalogDeliveryDestination: 'CHIANG_MAI',
+      catalogDeliveryDestination: destinationId,
     });
     bouquets = data.bouquets;
     allBouquetsForFacets = data.allBouquets;
@@ -146,11 +192,11 @@ export default async function CatalogPage({
     products = await getCatalogProductsFiltered({
       categoryKey: topCategory,
       sort: filterParams.sort || 'newest',
-      catalogDeliveryDestination: 'CHIANG_MAI',
+      catalogDeliveryDestination: destinationId,
     });
   }
 
-  const t = translations[lang as Locale].catalog;
+  const t = translations[locale].catalog;
 
   const occasionSlugToKey: Record<string, { title: keyof typeof t; desc: keyof typeof t }> = {
     birthday: { title: 'occasionTitleBirthday', desc: 'occasionDescBirthday' },
@@ -173,7 +219,7 @@ export default async function CatalogPage({
   const title = occasionKeys
     ? (t[occasionKeys.title] as string)
     : singleFlowerType
-      ? flowerTypeCatalogTitle(singleFlowerType, lang as Locale)
+      ? flowerTypeCatalogTitle(singleFlowerType, locale)
       : topCategory !== 'flowers' && CATEGORY_I18N_KEYS[topCategory as keyof typeof CATEGORY_I18N_KEYS]
         ? (t[CATEGORY_I18N_KEYS[topCategory as keyof typeof CATEGORY_I18N_KEYS] as keyof typeof t] as string)
         : t.title;
@@ -183,7 +229,7 @@ export default async function CatalogPage({
     <div className="catalog-page">
       <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <CatalogWithFilters
-          lang={lang as Locale}
+          lang={locale}
           bouquets={bouquets.length > 0 ? bouquets : undefined}
           products={products.length > 0 ? products : undefined}
           filterParams={filterParams}

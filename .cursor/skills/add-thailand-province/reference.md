@@ -18,10 +18,10 @@ Use with the `add-thailand-province` skill. Paths are repo-root relative.
 | `destination_id` on seed row | `lib/provinces/seedRoster.ts` |
 | DB matches seed | migration / `scripts/generate-provinces-migration.ts` |
 | Destination id union | `lib/delivery/markets.ts` → `DELIVERY_DESTINATIONS` |
-| Nav / footer / sitemap market | `lib/delivery/markets.ts` → `MARKETS` (+ `getNavMarkets` / `getActiveMarkets`) |
+| Nav / footer market | `lib/delivery/markets.ts` → `MARKETS` (`seoIndexable: false` by default; + `getNavMarkets` / `getActiveMarkets`) |
 | Header / Footer consumers | `components/Header.tsx`, `components/Footer.tsx` |
 | Zones + fees | `lib/delivery/zones.ts` → `ZONES_BY_DESTINATION` |
-| Market SEO page | `app/[lang]/(markets)/[market]/flower-delivery/` |
+| Operational landing (noindex unless `seoIndexable`) | `app/[lang]/(markets)/[market]/flower-delivery/` |
 | Coverage / catalog href | `lib/delivery/coverageDisplay.ts`, shop access helpers |
 | **Coverage page shoppable list** | `listShoppableCoverageAreas()` in `lib/delivery/coverageDisplay.ts` (MARKETS × province by `destination_id`) |
 | **Shoppable summary** | `formatShoppableProvinceSummary` — dynamic only; no hardcoded market blurbs |
@@ -30,7 +30,7 @@ Use with the `add-thailand-province` skill. Paths are repo-root relative.
 | **Province shop CTA** | `btn-premium` **inside** that province section only — never in the page hero or shared browse row |
 | Public provinces API | `app/api/provinces/` |
 | Partner province list | Already from DB — `partner/apply` |
-| Sitemap market URLs | `app/sitemap.ts` |
+| Sitemap market URLs | Only if `seoIndexable: true` (`app/sitemap.ts` gates on `marketIsSitemapEnabled`) |
 
 **Chiang Mai exception:** destination `CHIANG_MAI` uses the main catalog, not a `MARKETS` path slug.
 

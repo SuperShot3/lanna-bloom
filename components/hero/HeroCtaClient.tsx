@@ -41,7 +41,7 @@ export function HeroCtaClient({
       const slug = s?.pathSlug ?? null;
       if (slug && isMarketPathSlug(slug)) {
         const market = getMarketByPathSlug(slug);
-        setSessionHref(market ? `/${lang}/catalog/${market.pathSlug}` : null);
+        setSessionHref(market ? `/${lang}/catalog` : null);
         return;
       }
       setSessionHref(null);
@@ -61,9 +61,7 @@ export function HeroCtaClient({
     maybeMarketSlug && isMarketPathSlug(maybeMarketSlug)
       ? getMarketByPathSlug(maybeMarketSlug)
       : null;
-  const pathHref = activeMarket
-    ? `/${lang}/catalog/${activeMarket.pathSlug}`
-    : null;
+  const pathHref = activeMarket ? `/${lang}/catalog` : null;
   const primaryCtaHref = allowSessionCatalogHref
     ? pathHref ?? sessionHref ?? defaultHref
     : defaultHref;

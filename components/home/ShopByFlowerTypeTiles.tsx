@@ -16,7 +16,7 @@ export function ShopByFlowerTypeTiles({
 }: {
   lang: Locale;
   tiles: HomeFlowerTypeTile[];
-  /** Catalog listing path, e.g. `/en/catalog` or `/en/catalog/pattaya`. */
+  /** Catalog listing path, e.g. `/en/catalog`. */
   catalogHref?: string;
 }) {
   if (tiles.length === 0) return null;

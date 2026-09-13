@@ -42,6 +42,7 @@ export function ExploreLinksSection({ lang }: { lang: Locale }) {
       icon: 'local-shipping',
       title: t.destinationsTitle,
       links: [
+        { href: `/${lang}/delivery-areas-thailand`, label: t.thailandOverviewLink },
         ...getActiveMarkets().map((market) => ({
           href: `/${lang}/${market.pathSlug}/flower-delivery`,
           label: t.marketLinkTemplate.replace(
@@ -49,7 +50,6 @@ export function ExploreLinksSection({ lang }: { lang: Locale }) {
             lang === 'th' ? market.customerFacingNameTh : market.customerFacingNameEn
           ),
         })),
-        { href: `/${lang}/delivery-areas-thailand`, label: t.thailandOverviewLink },
       ],
     },
   ];

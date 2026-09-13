@@ -53,8 +53,10 @@ assert.ok(sameAs.includes('https://www.tiktok.com/@lannabloom_th'));
 const areaServed = jsonLd.areaServed as { name: string }[];
 const areaNames = areaServed.map((a) => a.name);
 assert.ok(areaNames.includes('Chiang Mai'));
-assert.ok(areaNames.includes('Bangkok'));
-assert.ok(areaNames.includes('Pai'));
+assert.ok(areaNames.includes('Thailand'));
+assert.ok(!areaNames.includes('Bangkok'));
+assert.ok(!areaNames.includes('Pai'));
+assert.ok(!areaNames.includes('Phuket'));
 
 assert.equal(website['@type'], 'WebSite');
 assert.deepEqual(website.publisher, { '@id': jsonLd['@id'] });

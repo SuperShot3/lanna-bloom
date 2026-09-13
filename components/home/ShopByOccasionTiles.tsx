@@ -19,7 +19,7 @@ export function ShopByOccasionTiles({
 }: {
   lang: Locale;
   tiles: HomeOccasionTile[];
-  /** Catalog listing path, e.g. `/en/catalog` or `/en/catalog/pattaya`. */
+  /** Catalog listing path, e.g. `/en/catalog`. */
   catalogHref?: string;
   destinationId?: DeliveryDestinationId;
 }) {

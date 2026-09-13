@@ -203,12 +203,12 @@ assert.equal(isArticleSeoLocale('zh-hk'), false);
   assert.ok(!(SEO_LOCALES as readonly string[]).includes('zh-sg'));
 }
 
-// --- City status rules ---
+// --- City status vs indexing ---
 for (const market of MARKETS) {
   if (market.status === 'active') {
-    assert.equal(marketIsIndexable(market), true);
-    assert.equal(marketIsSitemapEnabled(market), true);
     assert.equal(marketIsRouteAvailable(market), true);
+    assert.equal(marketIsIndexable(market), market.seoIndexable === true);
+    assert.equal(marketIsSitemapEnabled(market), market.seoIndexable === true);
   } else if (market.status === 'coming_soon') {
     assert.equal(marketIsIndexable(market), false);
     assert.equal(marketIsSitemapEnabled(market), false);
@@ -223,6 +223,14 @@ assert.equal(
   getActiveMarkets().length,
   MARKETS.filter((m) => m.status === 'active').length
 );
+
+for (const market of MARKETS) {
+  assert.notEqual(
+    market.seoIndexable,
+    true,
+    `${market.pathSlug} must stay operational-only until the re-index gate`
+  );
+}
 
 // --- Market metadata city match (title / H1 city / canonical city) ---
 function assertMarketMetadataCity(market: MarketRegistryEntry) {
@@ -250,9 +258,10 @@ function assertMarketMetadataCity(market: MarketRegistryEntry) {
       `Canonical missing market slug: ${canonical}`
     );
     assert.ok(!canonical.includes('?'), `Canonical has query: ${canonical}`);
-    if (market.status === 'coming_soon') {
-      const robots = meta.robots as { index?: boolean } | undefined;
+    if (!marketIsIndexable(market)) {
+      const robots = meta.robots as { index?: boolean; follow?: boolean } | undefined;
       assert.equal(robots?.index, false, `${market.pathSlug} should be noindex`);
+      assert.equal(robots?.follow, true, `${market.pathSlug} should be follow`);
     }
     const langs = meta.alternates?.languages as Record<string, string> | undefined;
     assert.ok(langs?.en && langs?.th && langs?.['zh-HK'], `${market.pathSlug} missing hreflang`);
@@ -392,12 +401,12 @@ function firstOgImageAlt(meta: Metadata): string {
   });
   const catalogCanonical = String(catalogMeta.alternates?.canonical ?? '');
   assert.ok(
-    catalogCanonical.endsWith('/en/catalog/bangkok'),
-    `Catalog canonical must be the pretty listing URL: ${catalogCanonical}`
+    catalogCanonical.endsWith('/en/catalog'),
+    `Catalog canonical must be the single listing URL: ${catalogCanonical}`
   );
   assert.ok(
-    !catalogCanonical.endsWith('/catalog/bangkok/catalog'),
-    `Catalog canonical must not double /catalog: ${catalogCanonical}`
+    !catalogCanonical.includes('/catalog/bangkok'),
+    `Catalog canonical must not be a city listing URL: ${catalogCanonical}`
   );
 
   const articleOg = articleShareImages('flower-delivery-bangkok', 'en');
@@ -435,6 +444,28 @@ function firstOgImageAlt(meta: Metadata): string {
     index: false,
     follow: false,
   });
+}
+
+{
+  const regionalArticleSlugs = [
+    'flower-delivery-bangkok',
+    'flower-delivery-pattaya',
+    'flower-delivery-phuket',
+    'flower-delivery-hua-hin',
+    'flower-delivery-samui',
+    'flower-delivery-pai',
+    'flower-delivery-lamphun-province',
+    'flower-delivery-to-hospitals-phuket',
+  ];
+  for (const slug of regionalArticleSlugs) {
+    const article = articles.find((a) => a.slug === slug);
+    assert.ok(article, `Missing regional article ${slug}`);
+    assert.equal(article!.noindex, true, `${slug} must be noindex`);
+    assert.ok(
+      !articles.filter((a) => !a.excludeFromSitemap && !a.noindex).some((a) => a.slug === slug),
+      `${slug} must not be sitemap-eligible`
+    );
+  }
 }
 
 {
@@ -523,8 +554,13 @@ function firstOgImageAlt(meta: Metadata): string {
     'sitemap must not emit regional product URLs'
   );
   assert.ok(
-    sitemapSrc.includes('/${lang}/${market.pathSlug}/flower-delivery'),
-    'sitemap must keep market landings'
+    sitemapSrc.includes('marketIsSitemapEnabled'),
+    'sitemap must gate market landings on seoIndexable'
+  );
+  assert.ok(
+    !sitemapSrc.includes("pushEntry(entries, `${base}/${lang}/${market.pathSlug}/flower-delivery`") ||
+      sitemapSrc.includes('if (!marketIsSitemapEnabled(market)) continue'),
+    'sitemap must not unconditionally emit market landings'
   );
 
   const middlewareSrc = readFileSync(path.join(process.cwd(), 'middleware.ts'), 'utf8');
