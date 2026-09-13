@@ -6,8 +6,13 @@ import type { Metadata } from 'next';
 import { getBaseUrl, isLocalHostname } from '@/lib/siteUrl';
 import type { Locale } from '@/lib/i18n';
 
-/** Storefront locales that participate in SEO (sitemap + hreflang). */
-export const SEO_LOCALES = ['en', 'th', 'zh-hk'] as const;
+/**
+ * Storefront locales that participate in SEO (sitemap + hreflang).
+ * zh-hk stays a live, crawlable URL (noindex,follow via nonSeoLocaleRobots)
+ * but is intentionally out of the indexed set for now so ranking signal
+ * stays concentrated on Chiang Mai EN/TH while that recovers to #1.
+ */
+export const SEO_LOCALES = ['en', 'th'] as const;
 export type SeoLocale = (typeof SEO_LOCALES)[number];
 
 /** Info articles stay EN/TH only — zh-hk articles are English fallbacks, not indexed. */
