@@ -146,10 +146,9 @@ export const AMPHOE_MAP_DISTRICTS: AmphoeMapDistrict[] = [
     ampCode: '5009',
     labelEn: 'Fang',
     labelTh: 'ฝาง',
-    typicalAreasEn: 'Fang district — confirm availability and fee with the driver before ordering',
-    typicalAreasTh: 'อำเภอฝาง — ยืนยันความพร้อมและค่าจัดส่งกับพนักงานขับรถก่อนสั่งซื้อ',
+    typicalAreasEn: 'Fang town and nearby destinations in the Fang checkout zone',
+    typicalAreasTh: 'ตัวเมืองฝางและพื้นที่ใกล้เคียงในโซนเช็กเอาต์ฝาง',
     checkoutZoneId: 'cm-fang',
-    manualQuote: true,
   },
   {
     id: 'mae-ai',

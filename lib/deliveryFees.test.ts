@@ -53,6 +53,8 @@ assert(calcDeliveryFeeTHB({ district: 'MAE_TAENG', isMueangCentral: false }) ===
 assert(calcDeliveryFeeTHB({ district: 'MAE_RIM', isMueangCentral: false }) === 900, 'Mae Rim = 900');
 assert(calcDeliveryFeeTHB({ district: 'SAMOENG', isMueangCentral: false }) === 950, 'Samoeng = 950');
 assert(calcDeliveryFeeTHB({ district: 'CHIANG_DAO', isMueangCentral: false }) === 950, 'Chiang Dao = 950');
+assert(calcDeliveryFeeTHB({ district: 'FANG', isMueangCentral: false }) === 700, 'Fang = 700');
+assert(calcDeliveryFeeTHB({ district: 'MAE_AI', isMueangCentral: false }) === 950, 'Mae Ai = 950');
 assert(calcDeliveryFeeTHB({ district: 'UNKNOWN', isMueangCentral: false }) === 1000, 'Unknown = 1000');
 
 // Auto-detect
@@ -70,6 +72,7 @@ assert(detectChiangMaiZoneFromAddress('หนองป่าคร้าง') ==
 assert(detectChiangMaiZoneFromAddress('Nong Chom, Chiang Mai') === 'cm-nong-chom', 'Nong Chom zone');
 assert(detectChiangMaiZoneFromAddress('Mae Hia, Hang Dong') === 'cm-mae-hia', 'Mae Hia zone');
 assert(detectChiangMaiZoneFromAddress('Don Kaeo, Chiang Mai') === 'cm-don-kaeo', 'Don Kaeo zone');
+assert(detectChiangMaiZoneFromAddress('อำเภอฝาง') === 'cm-fang', 'Fang zone');
 assert(getZoneFee('CHIANG_MAI', 'cm-suthep') === 300, 'Suthep fee = 300');
 assert(getZoneFee('CHIANG_MAI', 'cm-nong-chom') === 350, 'Nong Chom fee = 350');
 assert(getZoneFee('CHIANG_MAI', 'cm-mae-hia') === 550, 'Mae Hia fee = 550');
@@ -79,6 +82,7 @@ assert(getZoneFee('CHIANG_MAI', 'cm-hang-dong') === 600, 'Hang Dong fee = 600');
 assert(getZoneFee('CHIANG_MAI', 'cm-mae-rim') === 900, 'Mae Rim fee = 900');
 assert(getZoneFee('CHIANG_MAI', 'cm-unknown') === 1000, 'Unknown area fee = 1000');
 assert(getZoneFee('CHIANG_MAI', 'cm-samoeng') === 950, 'Samoeng fee = 950');
+assert(getZoneFee('CHIANG_MAI', 'cm-fang') === 700, 'Fang fee = 700');
 assert(getZoneFee('CHIANG_MAI', 'cm-lamphun') === null, 'CM Lamphun zone removed');
 assert(getZoneFee('LAMPHUN', 'lp-mueang-lamphun') === 250, 'Lamphun Mueang fee = 250');
 assert(getZoneFee('LAMPHUN', 'lp-pa-sang') === 300, 'Lamphun Pa Sang fee = 300');
@@ -90,7 +94,7 @@ assert(getZoneFee('LAMPHUN', 'lp-li') === 450, 'Lamphun Li fee = 450');
 assert(getZoneFee('LAMPHUN', 'lp-thung-hua-chang') === 550, 'Lamphun Thung Hua Chang fee = 550');
 assert(getZonesForDestination('LAMPHUN').length === 8, 'Lamphun has 8 amphoe zones');
 assert(getZonesForDestination('CHIANG_MAI').length === 23, 'Chiang Mai has 23 zones');
-assert(getCheckoutZonesForDestination('CHIANG_MAI').length === 21, 'Checkout excludes manual-quote zones');
+assert(getCheckoutZonesForDestination('CHIANG_MAI').length === 22, 'Checkout excludes remaining manual-quote zones');
 assert(getZonesForDestination('PATTAYA').length === 7, 'Pattaya has 7 checkout zones');
 assert(getZoneFee('PATTAYA', 'pat-central-pattaya') === 250, 'Pattaya Central fee = 250');
 assert(getZoneFee('PATTAYA', 'pat-na-jomtien') === 350, 'Pattaya Na Jomtien fee = 350');

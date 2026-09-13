@@ -187,7 +187,7 @@ function bouquet(partial: Partial<CartItem> & Pick<CartItem, 'bouquetId' | 'name
       deliveryLng: null,
       deliveryGoogleMapsUrl: null,
       deliveryDestination: 'CHIANG_MAI',
-      deliveryZoneId: 'cm-fang',
+      deliveryZoneId: 'cm-mae-ai',
     },
     customerName: '',
     customerEmail: '',

@@ -97,10 +97,10 @@ export function calcDeliveryFeeTHB(input: CalcDeliveryFeeInput): number {
       return 850;
     case 'SAMOENG':
     case 'CHIANG_DAO':
-      return 950;
-    case 'FANG':
     case 'MAE_AI':
       return 950;
+    case 'FANG':
+      return 700;
     case 'LAMPHUN':
     // Retired CM satellite — Lamphun is its own destination; treat stale carts as unknown.
     case 'UNKNOWN':

@@ -100,7 +100,7 @@ After mark paid, `runStripePostPaymentSuccessHooks` (`lib/stripe/postStripePayme
 
 - **Authoritative THB amounts:** `lib/delivery/zones.ts` — `ZONES_BY_DESTINATION` / `getZoneFee`. Cart, Stripe session create, and order totals all use this.
 - **Thailand delivery landing / district map:** `components/delivery/DeliveryDistrictMap.tsx` resolves fees through `lib/delivery/amphoeDisplayFees.ts` from the same zones. Amphoe geometry lives in `amphoeMapData.ts` without hardcoded fees.
-- Checkout-backed amphoes show the same fee as checkout (or min–max when one amphoe spans several zone ids, e.g. Mueang). Fang / Mae Ai / “other” show an estimate flagged **confirm with driver**.
+- Checkout-backed amphoes show the same fee as checkout (or min–max when one amphoe spans several zone ids, e.g. Mueang). Mae Ai / “other” show an estimate flagged **confirm with driver**.
 - Distance reference table fee column uses `getChiangMaiZoneFeeLadder()` from `zones.ts` (`getDeliveryDistanceTiers()` in `distanceTiers.ts`).
 
 **Do not** duplicate delivery fee amounts in amphoe/map/marketing data. Change fees only in `zones.ts`.

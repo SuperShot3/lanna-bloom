@@ -59,7 +59,7 @@ export const ZONES_BY_DESTINATION: Record<DeliveryDestinationId, DeliveryZoneDef
     { id: 'cm-mae-taeng', labelEn: 'Mae Taeng', labelTh: 'แม่แตง', feeThb: 850 },
     { id: 'cm-samoeng', labelEn: 'Samoeng', labelTh: 'สะเมิง', feeThb: 950 },
     { id: 'cm-chiang-dao', labelEn: 'Chiang Dao', labelTh: 'เชียงดาว', feeThb: 950 },
-    { id: 'cm-fang', labelEn: 'Fang', labelTh: 'ฝาง', feeThb: 950, manualQuote: true },
+    { id: 'cm-fang', labelEn: 'Fang', labelTh: 'ฝาง', feeThb: 700 },
     { id: 'cm-mae-ai', labelEn: 'Mae Ai', labelTh: 'แม่เอ๋ย', feeThb: 950, manualQuote: true },
     { id: 'cm-unknown', labelEn: 'Other / unknown area', labelTh: 'อื่นๆ / ไม่ทราบพื้นที่', feeThb: 1000 },
   ],

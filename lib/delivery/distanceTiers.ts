@@ -76,6 +76,13 @@ const DISTANCE_TIER_BASE: DeliveryDistanceTierBase[] = [
     typicalAreasTh: 'ตัวเมืองหางดงและปลายทางในโซนเช็กเอาต์หางดง',
   },
   {
+    id: 'tier-fang',
+    distanceLabelEn: 'Fang',
+    distanceLabelTh: 'ฝาง',
+    typicalAreasEn: 'Fang town and Fang destinations in the Fang checkout zone',
+    typicalAreasTh: 'ตัวเมืองฝางและปลายทางในโซนเช็กเอาต์ฝาง',
+  },
+  {
     id: 'tier-25-35',
     distanceLabelEn: 'More than 25–35 km',
     distanceLabelTh: 'มากกว่า 25–35 กม.',
