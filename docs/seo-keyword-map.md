@@ -5,7 +5,7 @@ Primary intent → one owner URL. Support pages link to the owner; they must not
 | Primary intent | Owner URL |
 |---|---|
 | Flower delivery Chiang Mai / buy flowers online CM | `/en` (homepage) · `/th` |
-| Chiang Mai delivery areas & fees (map) | `/en/delivery-areas-thailand` |
+| Thailand delivery areas & coverage (map) | `/en/delivery-areas-thailand` |
 | Flower delivery {City} | `/en/{city}/flower-delivery` (active markets only) |
 | Same-day flower delivery Chiang Mai | `/en/info/same-day-flower-delivery-chiang-mai` |
 | Rose delivery Chiang Mai | `/en/collections/roses-chiang-mai` |

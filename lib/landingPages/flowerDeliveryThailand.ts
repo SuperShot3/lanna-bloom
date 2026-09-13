@@ -189,10 +189,10 @@ export type FlowerDeliveryThailandCopy = {
 
 const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
   en: {
-    metaTitle: 'Flower Delivery Coverage in Thailand & Chiang Mai Fees | Lanna Bloom',
+    metaTitle: 'Delivery Areas in Thailand | Coverage Map & Fees | Lanna Bloom',
     metaDescription:
-      'Live Thailand flower-delivery coverage by province. Chiang Mai is our full-service core — check district fees on the map. Nationwide same-day is not promised.',
-    h1: 'Flower delivery across Thailand — Chiang Mai fees & coverage',
+      'Check delivery areas across Thailand on the live coverage map. See province status, mapped districts, and estimated fees. Nationwide same-day is not promised.',
+    h1: 'Delivery areas in Thailand',
     mapHint:
       'Tap a province for live delivery status. Where we map districts, tap again to see estimated fees.',
     intro:
@@ -261,10 +261,10 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
     ctaPai: 'Pai flower delivery',
   },
   th: {
-    metaTitle: 'พื้นที่จัดส่งดอกไม้ทั่วไทย และค่าส่งเชียงใหม่ | Lanna Bloom',
+    metaTitle: 'พื้นที่จัดส่งทั่วไทย | แผนที่ครอบคลุมและค่าส่ง | Lanna Bloom',
     metaDescription:
-      'ดูสถานะจัดส่งดอกไม้รายจังหวัดทั่วไทย เชียงใหม่คือฐานบริการหลักครบวงจร — ตรวจค่าส่งรายอำเภอบนแผนที่ ไม่รับประกันจัดส่งวันเดียวกันทั่วประเทศ',
-    h1: 'จัดส่งดอกไม้ทั่วไทย — ค่าส่งและพื้นที่เชียงใหม่',
+      'ดูพื้นที่จัดส่งทั่วไทยบนแผนที่สด สถานะรายจังหวัด อำเภอที่ระบุ และค่าส่งโดยประมาณ ไม่รับประกันจัดส่งวันเดียวกันทั่วประเทศ',
+    h1: 'พื้นที่จัดส่งทั่วไทย',
     mapHint:
       'แตะจังหวัดเพื่อดูสถานะจัดส่ง — จังหวัดที่มีแผนที่รายอำเภอ แตะอีกครั้งเพื่อดูค่าส่งโดยประมาณ',
     intro:
