@@ -9,27 +9,32 @@ import {
   EXPANSION_MARKUP_DESTINATIONS,
 } from '@/lib/expansionMarkup';
 
-const ISLAND: OrderDeliveryDestinationId[] = ['PHUKET', 'SAMUI', 'KRABI'];
-const MARKUP_20: OrderDeliveryDestinationId[] = ['BANGKOK', 'PAI'];
-const UNCHANGED: OrderDeliveryDestinationId[] = [
-  'CHIANG_MAI',
-  'PATTAYA',
-  'HUA_HIN',
-  'LAMPHUN',
-];
+const MARKUP_50: OrderDeliveryDestinationId[] = ['PHUKET', 'SAMUI', 'KRABI', 'PATTAYA', 'PAI'];
+const MARKUP_30: OrderDeliveryDestinationId[] = ['HUA_HIN'];
+const MARKUP_20: OrderDeliveryDestinationId[] = ['BANGKOK'];
+const UNCHANGED: OrderDeliveryDestinationId[] = ['CHIANG_MAI', 'LAMPHUN'];
 
 assert.deepEqual(
   Array.from(EXPANSION_MARKUP_DESTINATIONS).sort(),
-  [...ISLAND, ...MARKUP_20].sort(),
-  'markup destinations are Phuket, Samui, Krabi, Bangkok, and Pai'
+  [...MARKUP_50, ...MARKUP_30, ...MARKUP_20].sort(),
+  'markup destinations are Phuket, Samui, Krabi, Pattaya, Pai, Hua Hin, and Bangkok'
 );
 
-for (const dest of ISLAND) {
+for (const dest of MARKUP_50) {
   assert.equal(
     applyExpansionItemMarkupThb(890, dest),
-    1160,
-    `${dest}: 890 → 1160`
+    1340,
+    `${dest}: 890 → 1340`
   );
+  assert.equal(
+    applyExpansionItemMarkupThb(applyCatalogDiscountThb(890, 10), dest),
+    1200,
+    `${dest}: 10% off 890 = 801 → 1200`
+  );
+}
+
+for (const dest of MARKUP_30) {
+  assert.equal(applyExpansionItemMarkupThb(890, dest), 1160, `${dest}: 890 → 1160`);
   assert.equal(
     applyExpansionItemMarkupThb(applyCatalogDiscountThb(890, 10), dest),
     1040,

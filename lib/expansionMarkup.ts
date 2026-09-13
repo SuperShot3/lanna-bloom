@@ -1,12 +1,14 @@
 import type { OrderDeliveryDestinationId } from '@/lib/orders';
 
-/** Per-destination item multipliers (1.3 = +30%). Delivery fees are not marked up. */
+/** Per-destination item multipliers (1.5 = +50%). Delivery fees are not marked up. */
 export const EXPANSION_ITEM_MARKUP: Partial<Record<OrderDeliveryDestinationId, number>> = {
-  PHUKET: 1.3,
-  SAMUI: 1.3,
-  KRABI: 1.3,
+  PHUKET: 1.5,
+  SAMUI: 1.5,
+  KRABI: 1.5,
+  PATTAYA: 1.5,
+  PAI: 1.5,
+  HUA_HIN: 1.3,
   BANGKOK: 1.2,
-  PAI: 1.2,
 };
 
 export const EXPANSION_MARKUP_DESTINATIONS = new Set<OrderDeliveryDestinationId>(

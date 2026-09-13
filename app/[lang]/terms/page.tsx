@@ -20,6 +20,9 @@ export default function TermsPage({ params }: { params: { lang: string } }) {
     <div className="policy-page">
       <div className="container">
         <h1 className="policy-title">{isTh ? 'ข้อกำหนดการให้บริการ' : 'Terms of Service'}</h1>
+        <p className="policy-last-updated">
+          {isTh ? 'ปรับปรุงล่าสุด' : 'Last updated'}: 13.09.26
+        </p>
         <p className="policy-intro">
           {isTh
             ? 'เอกสารนี้สรุปข้อกำหนดการใช้เว็บไซต์และการสั่งซื้อของ Lanna Bloom'
@@ -107,13 +110,18 @@ export default function TermsPage({ params }: { params: { lang: string } }) {
           <ul className="policy-list">
             <li>
               {isTh
-                ? 'ภูเก็ต เกาะสมุย และกระบี่ / อ่าวนาง: ราคาสินค้าสูงกว่าราคาแคตตาล็อกเชียงใหม่ 30% ปัดเป็นจำนวนใกล้เคียง 10 บาท'
-                : 'Phuket, Koh Samui, and Krabi / Ao Nang: item prices are 30% higher than the Chiang Mai catalog, rounded to the nearest 10 THB.'}
+                ? 'ภูเก็ต เกาะสมุย กระบี่ / อ่าวนาง พัทยา และปาย: ราคาสินค้าสูงกว่าราคาแคตตาล็อกเชียงใหม่ 50% ปัดเป็นจำนวนใกล้เคียง 10 บาท'
+                : 'Phuket, Koh Samui, Krabi / Ao Nang, Pattaya, and Pai: item prices are 50% higher than the Chiang Mai catalog, rounded to the nearest 10 THB.'}
             </li>
             <li>
               {isTh
-                ? 'กรุงเทพฯ และปาย: ราคาสินค้าสูงกว่าราคาแคตตาล็อกเชียงใหม่ 20% ปัดเป็นจำนวนใกล้เคียง 10 บาท'
-                : 'Bangkok and Pai: item prices are 20% higher than the Chiang Mai catalog, rounded to the nearest 10 THB.'}
+                ? 'หัวหิน: ราคาสินค้าสูงกว่าราคาแคตตาล็อกเชียงใหม่ 30% ปัดเป็นจำนวนใกล้เคียง 10 บาท'
+                : 'Hua Hin: item prices are 30% higher than the Chiang Mai catalog, rounded to the nearest 10 THB.'}
+            </li>
+            <li>
+              {isTh
+                ? 'กรุงเทพฯ: ราคาสินค้าสูงกว่าราคาแคตตาล็อกเชียงใหม่ 20% ปัดเป็นจำนวนใกล้เคียง 10 บาท'
+                : 'Bangkok: item prices are 20% higher than the Chiang Mai catalog, rounded to the nearest 10 THB.'}
             </li>
           </ul>
           <p className="policy-text">
