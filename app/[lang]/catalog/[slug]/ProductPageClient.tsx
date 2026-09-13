@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { ProductGallery } from '@/components/ProductGallery';
 import { ProductOrderBlock } from '@/components/ProductOrderBlock';
 import { ProductAboutSection } from '@/components/pdp/ProductAboutSection';
+import { ProductReviewsSection } from '@/components/pdp/ProductReviewsSection';
 import { ProductCodeLine } from '@/components/pdp/ProductCodeLine';
 import { ProductShareLink } from '@/components/ProductShareLink';
 import type { Bouquet } from '@/lib/bouquets';
@@ -191,9 +192,14 @@ export function ProductPageClient({
           description={description}
           floristNote={floristNote}
           compositionText={compositionText}
+        />
+      </div>
+      <div className="product-reviews-wrap">
+        <ProductReviewsSection
+          lang={lang}
           bouquetId={bouquet.id}
           reviews={reviews}
-          reviewStats={reviewStats}
+          stats={reviewStats}
         />
       </div>
     </>

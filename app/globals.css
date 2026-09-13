@@ -648,6 +648,11 @@ main {
 
 /* Homepage shop-by category row: one list, native horizontal scroll */
 .flower-type-marquee {
+  display: flex;
+  /* Center the row when it fits the viewport (desktop); "safe" falls back to
+     start alignment once it overflows, so mobile scrolling never loses the
+     leading tiles (see https://developer.mozilla.org/en-US/docs/Web/CSS/justify-content#safe). */
+  justify-content: safe center;
   overflow-x: auto;
   overflow-y: hidden;
   padding-block: 0.375rem;

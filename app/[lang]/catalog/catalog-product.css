@@ -609,12 +609,20 @@ a.filter-pill--active:hover {
 @media (min-width: 768px) {
   .product-grid {
     grid-template-columns: 1.5fr 1fr;
+    grid-template-areas: 'gallery info' 'reviews info';
     gap: var(--space-10);
     align-items: start;
   }
   .product-gallery-wrap {
+    grid-area: gallery;
     margin: 0;
     max-width: 100%;
+  }
+  .product-info {
+    grid-area: info;
+  }
+  .product-reviews-wrap {
+    grid-area: reviews;
   }
 }
 @media (min-width: 1024px) {

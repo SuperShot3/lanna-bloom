@@ -2,11 +2,9 @@
 
 import { useId, useState, type ReactNode } from 'react';
 import { CareGuideSection } from '@/components/CareGuideSection';
-import { ProductReviewsSection } from '@/components/pdp/ProductReviewsSection';
 import { translations, type Locale } from '@/lib/i18n';
 import { CompositionLines } from '@/components/pdp/CompositionLines';
 import { OverlayReveal } from '@/components/ui/overlay-reveal';
-import type { ProductReview, ProductReviewStats } from '@/lib/productReviews';
 import styles from './product-pdp.module.css';
 
 function AccordionRow({
@@ -60,17 +58,11 @@ export function ProductAboutSection({
   description,
   floristNote,
   compositionText,
-  bouquetId,
-  reviews,
-  reviewStats,
 }: {
   lang: Locale;
   description: string;
   floristNote?: string;
   compositionText: string;
-  bouquetId: string;
-  reviews: ProductReview[];
-  reviewStats: ProductReviewStats;
 }) {
   const t = translations[lang].product;
   const note = floristNote?.trim() ?? '';
@@ -100,13 +92,6 @@ export function ProductAboutSection({
       ) : null}
 
       <CareGuideSection lang={lang} />
-
-      <ProductReviewsSection
-        lang={lang}
-        bouquetId={bouquetId}
-        reviews={reviews}
-        stats={reviewStats}
-      />
 
       <p className={styles.policyNote}>{t.seasonalDisclaimer}</p>
       <p className={styles.policyLinks}>
