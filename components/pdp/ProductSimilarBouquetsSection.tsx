@@ -5,10 +5,12 @@ import type { Bouquet } from '@/lib/bouquets';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { BouquetsCarousel } from '@/components/BouquetsCarousel';
+import { PremiumCtaLink } from '@/components/home/PremiumCtaLink';
 import { trackViewItemList } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
 import { getBouquetDisplayCategory } from '@/lib/catalogCategories';
 import { optionDisplayLabel } from '@/lib/bouquetOptions';
+import { buildMarketCatalogHref } from '@/lib/delivery/marketRoute';
 import styles from './product-pdp.module.css';
 
 export const PDP_SIMILAR_BOUQUETS_LIST = 'pdp_similar_bouquets';
@@ -37,7 +39,10 @@ export function ProductSimilarBouquetsSection({
   lang: Locale;
 }) {
   const sectionRef = useRef<HTMLElement>(null);
-  const t = translations[lang].product as { similarBouquetsTitle?: string };
+  const t = translations[lang].product as {
+    similarBouquetsTitle?: string;
+    viewMoreProducts?: string;
+  };
   const analyticsItems = useMemo(
     () => bouquetsToAnalyticsItems(bouquets, lang),
     [bouquets, lang]
@@ -76,6 +81,15 @@ export function ProductSimilarBouquetsSection({
         listName={PDP_SIMILAR_BOUQUETS_LIST}
         variant="pdpSimilar"
       />
+      <div className={styles.similarBouquetsCta}>
+        <PremiumCtaLink
+          href={buildMarketCatalogHref(lang, null)}
+          ctaEvent="cta_pdp_view_more"
+          className="w-full max-w-xs sm:w-auto sm:max-w-none"
+        >
+          {t.viewMoreProducts ?? 'Explore full catalog'}
+        </PremiumCtaLink>
+      </div>
     </section>
   );
 }

@@ -10,6 +10,7 @@ import { isSeoLocale } from '@/lib/seo/alternates';
 import { ProductPageClient } from './ProductPageClient';
 import { ProductDetailClient } from './ProductDetailClient';
 import { ProductSimilarBouquetsSection } from '@/components/pdp/ProductSimilarBouquetsSection';
+import { ProductCatalogCta } from '@/components/pdp/ProductCatalogCta';
 import {
   getCatalogBalloonBySlug,
   getCatalogBouquetBySlug,
@@ -151,6 +152,10 @@ export async function renderCatalogProductPage({ params }: CatalogProductPageArg
               suggestedBouquets={suggestedBouquets}
             />
           </div>
+          <ProductCatalogCta
+            lang={lang as Locale}
+            href={buildMarketCatalogHref(lang, null, 'topCategory=plushy_toys')}
+          />
         </div>
       </div>
     );
@@ -196,6 +201,7 @@ export async function renderCatalogProductPage({ params }: CatalogProductPageArg
               suggestedBouquets={suggestedBouquets}
             />
           </div>
+          <ProductCatalogCta lang={lang as Locale} href={balloonCatalogHref} />
         </div>
       </div>
     );
@@ -235,6 +241,7 @@ export async function renderCatalogProductPage({ params }: CatalogProductPageArg
               gifts={gifts}
             />
           </div>
+          <ProductCatalogCta lang={lang as Locale} href={catalogHref} />
         </div>
       </div>
     );
