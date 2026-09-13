@@ -1,4 +1,5 @@
 import { getExpenses } from '@/lib/expenses/expenseQueries';
+import { listExpenseCategories, getExpenseCategoryTotals } from '@/lib/expenses/expenseCategoryQueries';
 import type { DocumentationFilter, ReceiptFilter } from '@/types/expenses';
 import { buildAccountingPeriodLabel, resolveAccountingPeriod } from '../accounting-period';
 import { AccountingShellClient } from '../AccountingShellClient';
@@ -43,7 +44,22 @@ export default async function AccountingExpensesPage({ searchParams }: PageProps
     documentation: documentationFilter,
   };
 
-  const expensesData = await getExpenses(expenseFilters, { page: expensePage, pageSize: expensePageSize });
+  const [expensesData, categoriesResult, categoryTotalsResult] = await Promise.all([
+    getExpenses(expenseFilters, { page: expensePage, pageSize: expensePageSize }),
+    listExpenseCategories(),
+    getExpenseCategoryTotals({
+      dateFrom: expenseFilters.dateFrom,
+      dateTo: expenseFilters.dateTo,
+      payment_method: expenseFilters.payment_method,
+      receipt: expenseFilters.receipt,
+      documentation: expenseFilters.documentation,
+    }),
+  ]);
+  const categories = categoriesResult.ok ? categoriesResult.categories : [];
+  const categoryTotals = categoryTotalsResult.ok
+    ? { totals: categoryTotalsResult.totals, grandTotal: categoryTotalsResult.grandTotal }
+    : { totals: [], grandTotal: 0 };
+
   const periodLabel = buildAccountingPeriodLabel(effectivePeriod, {
     userAskedAllTime,
     noExplicitPeriod,
@@ -65,6 +81,8 @@ export default async function AccountingExpensesPage({ searchParams }: PageProps
         expensesPageSize={expensePageSize}
         expensesFilters={expenseFilters}
         periodLabel={periodLabel}
+        categories={categories}
+        categoryTotals={categoryTotals}
       />
     </AccountingShellClient>
   );

@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { ensureBillTrackingUpToDate, getExpenseById } from '@/lib/expenses/expenseQueries';
+import { listExpenseCategories } from '@/lib/expenses/expenseCategoryQueries';
 import { ExpenseDetailClient } from './ExpenseDetailClient';
 
 interface PageProps {
@@ -12,7 +13,11 @@ export default async function AdminExpenseDetailPage({ params }: PageProps) {
 
   if (!raw) notFound();
 
-  const expense = await ensureBillTrackingUpToDate(raw);
+  const [expense, categoriesResult] = await Promise.all([
+    ensureBillTrackingUpToDate(raw),
+    listExpenseCategories(),
+  ]);
+  const categories = categoriesResult.ok ? categoriesResult.categories : [];
 
-  return <ExpenseDetailClient expense={expense} />;
+  return <ExpenseDetailClient expense={expense} categories={categories} />;
 }

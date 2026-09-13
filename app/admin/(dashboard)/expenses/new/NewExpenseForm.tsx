@@ -3,7 +3,8 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/types/expenses';
+import { PAYMENT_METHODS } from '@/types/expenses';
+import type { ExpenseCategoryRow } from '@/lib/expenses/expenseCategoryQueries';
 import { compressReceiptImageForUpload } from '@/lib/receiptImageCompress';
 import { isReceiptImageFile } from '@/lib/isReceiptImageFile';
 import { MAX_RECEIPT_UPLOAD_BYTES, MAX_RECEIPT_UPLOAD_LABEL } from '@/lib/receiptUploadLimits';
@@ -12,7 +13,11 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function NewExpenseForm() {
+interface Props {
+  categories: ExpenseCategoryRow[];
+}
+
+export function NewExpenseForm({ categories }: Props) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -206,7 +211,7 @@ export function NewExpenseForm() {
             required
           >
             <option value="">Select category…</option>
-            {EXPENSE_CATEGORIES.map((c) => (
+            {categories.map((c) => (
               <option key={c.value} value={c.value}>{c.label}</option>
             ))}
           </select>

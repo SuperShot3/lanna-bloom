@@ -5,19 +5,15 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useRef, useState } from 'react';
 import type { Expense, ExpenseFilters } from '@/types/expenses';
 import { billTrackingProgress, expenseDocumentationComplete } from '@/types/expenses';
-import {
-  EXPENSE_CATEGORIES,
-  EXPENSE_PAYMENT_FILTER_OPTIONS,
-  PAYMENT_METHOD_LABEL_BY_VALUE,
-} from '@/types/expenses';
+import { EXPENSE_PAYMENT_FILTER_OPTIONS, PAYMENT_METHOD_LABEL_BY_VALUE } from '@/types/expenses';
 import type { ExpensesResult } from '@/lib/expenses/expenseQueries';
+import type { ExpenseCategoryRow, ExpenseCategoryTotal } from '@/lib/expenses/expenseCategoryQueries';
 import { compressReceiptImageForUpload } from '@/lib/receiptImageCompress';
 import { isReceiptImageFile } from '@/lib/isReceiptImageFile';
 import { MAX_RECEIPT_UPLOAD_BYTES, MAX_RECEIPT_UPLOAD_LABEL } from '@/lib/receiptUploadLimits';
+import { ExpenseCategoryBreakdown } from './ExpenseCategoryBreakdown';
+import { ManageCategoriesModal } from './ManageCategoriesModal';
 
-const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
-  EXPENSE_CATEGORIES.map((c) => [c.value, c.label])
-);
 const PM_LABEL = PAYMENT_METHOD_LABEL_BY_VALUE;
 
 function formatAmount(amount: number, currency = 'THB') {
@@ -29,32 +25,16 @@ function formatAmount(amount: number, currency = 'THB') {
   }).format(amount);
 }
 
+function categoryBadgeStyle(color: string): React.CSSProperties {
+  return { background: `color-mix(in srgb, ${color} 15%, white)`, color };
+}
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-GB', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
   });
-}
-
-/** RFC-4180 cell escape (commas, quotes, newlines). */
-function escapeCsvCell(s: string) {
-  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
-}
-
-function downloadCsvLines(filename: string, lines: string[]) {
-  const bom = '\ufeff';
-  const blob = new Blob([bom + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-function periodSlug(periodLabel: string) {
-  return periodLabel.replace(/[^0-9a-z-]+/gi, '_');
 }
 
 function proofStatusText(exp: Expense) {
@@ -171,6 +151,8 @@ interface Props {
   expensesPageSize: number;
   expensesFilters: ExpenseFilters;
   periodLabel: string;
+  categories: ExpenseCategoryRow[];
+  categoryTotals: { totals: ExpenseCategoryTotal[]; grandTotal: number };
 }
 
 export function AccountingExpensesPanel({
@@ -179,6 +161,8 @@ export function AccountingExpensesPanel({
   expensesPageSize,
   expensesFilters,
   periodLabel,
+  categories,
+  categoryTotals,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -186,6 +170,10 @@ export function AccountingExpensesPanel({
   const sp = searchParams ?? new URLSearchParams();
   const proofFileInputRef = useRef<HTMLInputElement>(null);
   const proofExpenseIdRef = useRef<string | null>(null);
+  const [manageCategoriesOpen, setManageCategoriesOpen] = useState(false);
+
+  const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(categories.map((c) => [c.value, c.label]));
+  const CATEGORY_COLOR: Record<string, string> = Object.fromEntries(categories.map((c) => [c.value, c.color]));
 
   const [proofUploadState, setProofUploadState] = useState<{
     expenseId: string;
@@ -273,45 +261,14 @@ export function AccountingExpensesPanel({
   const sortedExpenses = [...expensesData.expenses].sort(paidLastSort);
 
   const exportExpensesCsv = () => {
-    const headers = [
-      'Date',
-      'Description',
-      'Category',
-      'Payment method',
-      'Receipt attached',
-      'Proof checks (done/total)',
-      'Documentation complete',
-      'Incomplete (flag)',
-      'Paper bill request sent',
-      'Amount',
-      'Currency',
-      'Notes',
-      'Linked order',
-      'Created by',
-    ];
-    const lines = [headers.join(',')];
-    for (const exp of sortedExpenses) {
-      const p = billTrackingProgress(exp.bill_tracking);
-      lines.push(
-        [
-          escapeCsvCell(exp.date.slice(0, 10)),
-          escapeCsvCell(exp.description),
-          escapeCsvCell(CATEGORY_LABEL[exp.category] ?? exp.category),
-          escapeCsvCell(PM_LABEL[exp.payment_method] ?? exp.payment_method),
-          exp.receipt_attached ? 'Yes' : 'MISSING',
-          escapeCsvCell(p ? `${p.done}/${p.total}` : '—'),
-          expenseDocumentationComplete(exp) ? 'Yes' : 'No',
-          !expenseDocumentationComplete(exp) ? 'YES' : '',
-          exp.paper_bill_requested_at ? 'Yes' : '',
-          String(exp.amount),
-          escapeCsvCell(exp.currency || 'THB'),
-          escapeCsvCell(exp.notes ?? ''),
-          escapeCsvCell(exp.linked_order_id ?? ''),
-          escapeCsvCell(exp.created_by ?? ''),
-        ].join(',')
-      );
-    }
-    downloadCsvLines(`expenses-${periodSlug(periodLabel)}.csv`, lines);
+    const params = new URLSearchParams();
+    if (expensesFilters.dateFrom) params.set('dateFrom', expensesFilters.dateFrom);
+    if (expensesFilters.dateTo) params.set('dateTo', expensesFilters.dateTo);
+    if (expensesFilters.category) params.set('category', expensesFilters.category);
+    if (expensesFilters.payment_method) params.set('payment_method', expensesFilters.payment_method);
+    if (expensesFilters.receipt) params.set('receipt', expensesFilters.receipt);
+    if (expensesFilters.documentation) params.set('documentation', expensesFilters.documentation);
+    window.location.href = `/api/admin/expenses/export?${params.toString()}`;
   };
 
   const expensesTotalPages =
@@ -329,6 +286,38 @@ export function AccountingExpensesPanel({
         aria-label="Submit expense proof image"
       />
 
+      <div className="admin-expenses-summary admin-expenses-summary-grid">
+        <div className="admin-expenses-summary-card admin-expenses-summary-card-primary">
+          <span className="admin-expenses-summary-label">Total expenses</span>
+          <strong className="admin-expenses-summary-value">{formatAmount(expensesData.totalAmount)}</strong>
+          <span className="admin-hint">{periodLabel}</span>
+        </div>
+        <div className="admin-expenses-summary-card">
+          <span className="admin-expenses-summary-label">Records</span>
+          <strong className="admin-expenses-summary-value">{expensesData.total}</strong>
+          <span className="admin-hint">Showing {expensesData.expenses.length}</span>
+        </div>
+        <div
+          className={`admin-expenses-summary-card${
+            expensesData.missingReceiptCount > 0 ? ' admin-expenses-summary-card-warning' : ''
+          }`}
+        >
+          <span className="admin-expenses-summary-label">Need proof</span>
+          <strong className="admin-expenses-summary-value">{expensesData.missingReceiptCount}</strong>
+          <span className="admin-hint">{documentedCount} complete</span>
+        </div>
+      </div>
+
+      <ExpenseCategoryBreakdown
+        totals={categoryTotals.totals}
+        grandTotal={categoryTotals.grandTotal}
+        periodLabel={periodLabel}
+        onManageCategories={() => setManageCategoriesOpen(true)}
+      />
+      {manageCategoriesOpen && (
+        <ManageCategoriesModal categories={categories} onClose={() => setManageCategoriesOpen(false)} />
+      )}
+
       <div className="admin-expenses-filters">
         <select
           className="admin-select"
@@ -337,11 +326,13 @@ export function AccountingExpensesPanel({
           aria-label="Category"
         >
           <option value="all">All categories</option>
-          {EXPENSE_CATEGORIES.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
+          {categories
+            .filter((c) => c.active || c.value === expensesFilters.category)
+            .map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
         </select>
         <select
           className="admin-select"
@@ -401,35 +392,13 @@ export function AccountingExpensesPanel({
           type="button"
           className="admin-btn admin-btn-outline admin-btn-sm"
           onClick={exportExpensesCsv}
-          disabled={expensesData.expenses.length === 0}
-          title="Export the visible page as CSV"
+          disabled={expensesData.total === 0}
+          title="Export the full filtered set as CSV"
         >
           Export CSV
         </button>
       </div>
       {proofUploadError && <span className="admin-field-error admin-expenses-proof-error">{proofUploadError}</span>}
-
-      <div className="admin-expenses-summary admin-expenses-summary-grid">
-        <div className="admin-expenses-summary-card admin-expenses-summary-card-primary">
-          <span className="admin-expenses-summary-label">Total expenses</span>
-          <strong className="admin-expenses-summary-value">{formatAmount(expensesData.totalAmount)}</strong>
-          <span className="admin-hint">{periodLabel}</span>
-        </div>
-        <div className="admin-expenses-summary-card">
-          <span className="admin-expenses-summary-label">Records</span>
-          <strong className="admin-expenses-summary-value">{expensesData.total}</strong>
-          <span className="admin-hint">Showing {expensesData.expenses.length}</span>
-        </div>
-        <div
-          className={`admin-expenses-summary-card${
-            expensesData.missingReceiptCount > 0 ? ' admin-expenses-summary-card-warning' : ''
-          }`}
-        >
-          <span className="admin-expenses-summary-label">Need proof</span>
-          <strong className="admin-expenses-summary-value">{expensesData.missingReceiptCount}</strong>
-          <span className="admin-hint">{documentedCount} complete</span>
-        </div>
-      </div>
 
       {expensesData.error ? (
         <div className="admin-error">
@@ -487,7 +456,10 @@ export function AccountingExpensesPanel({
                           <span className="admin-expenses-desc-copy">
                             <span className="admin-expenses-desc-text">{exp.description}</span>
                             <span className="admin-expenses-meta">
-                              <span className="admin-badge admin-badge-category">
+                              <span
+                                className="admin-badge admin-badge-category-dynamic"
+                                style={categoryBadgeStyle(CATEGORY_COLOR[exp.category] ?? '#94A3B8')}
+                              >
                                 {CATEGORY_LABEL[exp.category] ?? exp.category}
                               </span>
                               <span>{PM_LABEL[exp.payment_method] ?? exp.payment_method}</span>
@@ -562,7 +534,10 @@ export function AccountingExpensesPanel({
                         </span>
                         <h3 className="admin-expenses-mobile-title">{exp.description}</h3>
                         <span className="admin-expenses-meta">
-                          <span className="admin-badge admin-badge-category">
+                          <span
+                            className="admin-badge admin-badge-category-dynamic"
+                            style={categoryBadgeStyle(CATEGORY_COLOR[exp.category] ?? '#94A3B8')}
+                          >
                             {CATEGORY_LABEL[exp.category] ?? exp.category}
                           </span>
                           <span>{PM_LABEL[exp.payment_method] ?? exp.payment_method}</span>

@@ -17,7 +17,6 @@ import {
 import {
   expenseDocumentationComplete,
   parseExpenseBillTrackingJson,
-  COGS_EXPENSE_CATEGORIES,
 } from '@/types/expenses';
 import {
   getIncomeLookupForRefundOrders,
@@ -25,6 +24,7 @@ import {
   getStripeRefundsTotalThroughDate,
 } from '@/lib/accounting/incomeRefunds';
 import { allocateOverviewRefunds } from '@/lib/accounting/allocateOverviewRefunds';
+import { listExpenseCategories } from '@/lib/expenses/expenseCategoryQueries';
 
 const TABLE = 'income_records';
 
@@ -1203,13 +1203,17 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
   const periodTfFrom = filter.dateFrom?.slice(0, 10) ?? '0001-01-01';
   const periodTfTo = filter.dateTo?.slice(0, 10) ?? '9999-12-31';
 
-  const [{ data: incomeRows }, { data: expenseRows }, periodRefunds, stripeRefundsLedger] =
+  const [{ data: incomeRows }, { data: expenseRows }, periodRefunds, stripeRefundsLedger, categoriesResult] =
     await Promise.all([
       incomeQuery,
       expenseQuery,
       getRefundsForOverviewPeriod(filter),
       getStripeRefundsTotalThroughDate(ledgerBalanceThrough),
+      listExpenseCategories(),
     ]);
+  const cogsCategoryValues = new Set(
+    (categoriesResult.ok ? categoriesResult.categories : []).filter((c) => c.is_cogs).map((c) => c.value)
+  );
 
   const ytdFrom = `${ledgerBalanceThrough.slice(0, 4)}-01-01`;
 
@@ -1290,7 +1294,7 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
     const amount = parseFloat(String(row.amount)) || 0;
     totalExpenses += amount;
     const cat = String((row as { category?: unknown }).category ?? 'other');
-    if (COGS_EXPENSE_CATEGORIES.has(cat)) {
+    if (cogsCategoryValues.has(cat)) {
       cogsSubtotal += amount;
     } else {
       operatingExpensesSubtotal += amount;

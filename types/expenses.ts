@@ -1,16 +1,3 @@
-export type ExpenseCategory =
-  | 'flowers'
-  | 'packaging'
-  | 'delivery'
-  | 'advertising'
-  | 'supplier_payment'
-  | 'transport'
-  | 'tools_equipment'
-  | 'soft_toys'
-  | 'greeting_cards'
-  | 'balloons'
-  | 'other';
-
 export type PaymentMethod =
   | 'cash'
   | 'bank_transfer'
@@ -53,7 +40,8 @@ export interface Expense {
   amount: number;
   currency: string;
   date: string;          // ISO date string YYYY-MM-DD
-  category: ExpenseCategory;
+  /** Expense category value (slug) — see `expense_categories` table / `lib/expenses/expenseCategoryQueries.ts`. */
+  category: string;
   description: string;
   payment_method: PaymentMethod;
   receipt_file_path: string | null;
@@ -102,32 +90,24 @@ export interface ExpenseFilters {
   documentation?: DocumentationFilter;
 }
 
-export const EXPENSE_CATEGORIES: { value: ExpenseCategory; label: string }[] = [
-  { value: 'flowers',          label: 'Flowers' },
-  { value: 'packaging',        label: 'Packaging' },
-  { value: 'delivery',         label: 'Delivery' },
-  { value: 'balloons',         label: 'Balloons' },
-  { value: 'soft_toys',        label: 'Soft toys' },
-  { value: 'greeting_cards',   label: 'Greeting cards' },
-  { value: 'advertising',      label: 'Advertising' },
-  { value: 'supplier_payment', label: 'Supplier Payment' },
-  { value: 'transport',        label: 'Transport' },
-  { value: 'tools_equipment',  label: 'Tools & Equipment' },
-  { value: 'other',            label: 'Other' },
-];
-
 /**
- * P+L overview: included in gross profit via COGS (bouquet adds-on and direct sale materials).
- * Categories not listed here count as operating (e.g. advertising, transport, tools, Other for AI/Google).
+ * Curated swatch set offered when creating a new expense category (`ManageCategoriesModal`).
+ * Server-validated in `app/api/admin/expense-categories/route.ts` — a category's `color` must
+ * be one of these, so an arbitrary client-supplied hex is never trusted.
  */
-export const COGS_EXPENSE_CATEGORIES = new Set<string>([
-  'flowers',
-  'delivery',
-  'packaging',
-  'soft_toys',
-  'greeting_cards',
-  'balloons',
-]);
+export const EXPENSE_CATEGORY_COLORS: string[] = [
+  '#1A3C34',
+  '#C5A059',
+  '#B45309',
+  '#DB2777',
+  '#0D9488',
+  '#4F46E5',
+  '#7C3AED',
+  '#2563EB',
+  '#64748B',
+  '#C2410C',
+  '#94A3B8',
+];
 
 /** Payment methods admins may choose for new/expense edits. (Stripe balance is not an operating-pay bucket here.) */
 export const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [

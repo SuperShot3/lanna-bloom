@@ -63,6 +63,8 @@ When staff saves **Costs & Profit** on an order (`PATCH /api/admin/orders/[order
 
 Both represent costs typically paid via bank/transfer to suppliers or drivers. **Cash** remains available on the expense form for rare petty-cash / withdrawal spending—use it only when the payment truly left cash on hand.
 
+**Category taxonomy is DB-managed.** The full set of expense categories (labels, colors, COGS-vs-operating classification) lives in the `expense_categories` table, editable from Accounting → Expenses → **Manage categories** — adding a category no longer requires a code deploy. The `flowers` and `delivery` *values* above stay hardcoded in the sync code paths (`app/api/admin/orders/[order_id]/costs/route.ts`, `lib/expenses/billTracking.ts`), so those two rows are marked `is_system = true` and can never be renamed or archived.
+
 **Manual**
 
 - Any expense created from **Accounting → Expenses** (or edits to payment method on an existing row).
@@ -87,6 +89,7 @@ On the order detail, **profit** is computed as roughly: total − COGS − deliv
 | Personal withdrawals | `lib/accounting/withdrawals.ts`, `accounting_withdrawals` table |
 | Costs PATCH + expense upsert | `app/api/admin/orders/[order_id]/costs/route.ts` |
 | Sync note constants | `lib/expenses/expenseQueries.ts` — `ORDER_COSTS_FLOWERS_SYNC_NOTE`, `ORDER_COSTS_DELIVERY_SYNC_NOTE` |
+| Expense category taxonomy | `lib/expenses/expenseCategoryQueries.ts`, `expense_categories` table; Accounting → Expenses → "Manage categories" |
 | Admin help UI | `app/admin/(dashboard)/accounting/info/page.tsx` |
 
 ## Historical fix

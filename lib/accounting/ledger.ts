@@ -8,11 +8,12 @@ import type { IncomePaymentMethod, IncomeRecord } from '@/types/accounting';
 import { incomeDocumentationComplete } from '@/types/accounting';
 import { INCOME_SOURCE_TYPES, MONEY_LOCATIONS } from '@/types/accounting';
 import type { Expense } from '@/types/expenses';
-import { EXPENSE_CATEGORIES, expenseDocumentationComplete } from '@/types/expenses';
+import { expenseDocumentationComplete } from '@/types/expenses';
 import type { AccountingTransfer } from '@/types/accountingTransfers';
 import type { AccountingWithdrawal } from '@/types/accountingWithdrawals';
 import { getAccountingTransfers } from '@/lib/accounting/transfers';
 import { getAccountingWithdrawals } from '@/lib/accounting/withdrawals';
+import { listExpenseCategories } from '@/lib/expenses/expenseCategoryQueries';
 import type {
   LedgerCategoryBreakdown,
   LedgerLocationBreakdown,
@@ -25,9 +26,6 @@ import type {
 
 const INCOME_CAT_LABEL = Object.fromEntries(
   INCOME_SOURCE_TYPES.map((x) => [x.value, x.label])
-);
-const EXPENSE_CAT_LABEL = Object.fromEntries(
-  EXPENSE_CATEGORIES.map((x) => [x.value, x.label])
 );
 const MONEY_LOC_LABEL = Object.fromEntries(
   MONEY_LOCATIONS.map((x) => [x.value, x.label])
@@ -148,7 +146,8 @@ function toIncomeLedgerRow(
 function toExpenseLedgerRow(
   e: Expense,
   runningBalance: number,
-  sortIso: string
+  sortIso: string,
+  expenseCatLabel: Record<string, string>
 ): LedgerRow {
   const amt = Number(e.amount) || 0;
   const pm = paymentMethodLabelExpense(e.payment_method);
@@ -158,7 +157,7 @@ function toExpenseLedgerRow(
     sortIso,
     displayDate: e.date.slice(0, 10),
     transactionType: 'expense',
-    category: EXPENSE_CAT_LABEL[e.category] ?? e.category,
+    category: expenseCatLabel[e.category] ?? e.category,
     description: e.description,
     sourceAccount: `Expense · ${pm}`,
     amountIn: null,
@@ -281,12 +280,18 @@ export async function getLedgerEntries(
     { data: expenseData, error: expErr },
     transferResult,
     withdrawalResult,
+    categoriesResult,
   ] = await Promise.all([
     supabase.from('income_records').select('*').neq('income_status', 'cancelled'),
     supabase.from('expenses').select('*'),
     getAccountingTransfers(filter),
     getAccountingWithdrawals(filter),
+    listExpenseCategories(),
   ]);
+
+  const expenseCatLabel: Record<string, string> = Object.fromEntries(
+    (categoriesResult.ok ? categoriesResult.categories : []).map((c) => [c.value, c.label])
+  );
 
   if (incomeErr || expErr || transferResult.error || withdrawalResult.error) {
     const msg =
@@ -392,7 +397,7 @@ export async function getLedgerEntries(
       const e = item.expense;
       const amt = Number(e.amount) || 0;
       balance -= amt;
-      rows.push(toExpenseLedgerRow(e, balance, item.sortIso));
+      rows.push(toExpenseLedgerRow(e, balance, item.sortIso, expenseCatLabel));
     } else if (item.type === 'transfer' && item.transfer) {
       rows.push(toTransferLedgerRow(item.transfer, balance, item.sortIso));
     } else if (item.type === 'withdrawal' && item.withdrawal) {
@@ -458,7 +463,7 @@ export async function getLedgerEntries(
     if (!bucket) {
       bucket = {
         category: key,
-        label: EXPENSE_CAT_LABEL[key] ?? key,
+        label: expenseCatLabel[key] ?? key,
         total: 0,
         count: 0,
       };

@@ -10,7 +10,8 @@ import {
   expenseDocumentationComplete,
   setBillLineProofReceived,
 } from '@/types/expenses';
-import { EXPENSE_CATEGORIES, PAYMENT_METHOD_LABEL_BY_VALUE } from '@/types/expenses';
+import { PAYMENT_METHOD_LABEL_BY_VALUE } from '@/types/expenses';
+import type { ExpenseCategoryRow } from '@/lib/expenses/expenseCategoryQueries';
 import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
 import { compressReceiptImageForUpload } from '@/lib/receiptImageCompress';
 import { isReceiptImageFile } from '@/lib/isReceiptImageFile';
@@ -20,9 +21,6 @@ import {
   MAX_RECEIPT_UPLOAD_LABEL,
 } from '@/lib/receiptUploadLimits';
 
-const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
-  EXPENSE_CATEGORIES.map((c) => [c.value, c.label])
-);
 const PM_LABEL = PAYMENT_METHOD_LABEL_BY_VALUE;
 
 function formatAmount(amount: number, currency = 'THB') {
@@ -60,13 +58,15 @@ function receiptFileName(path: string | null): string | null {
 
 interface ExpenseDetailClientProps {
   expense: Expense;
+  categories: ExpenseCategoryRow[];
 }
 
 const DELETE_RECEIPT_CONFIRM =
   'Are you sure you want to delete this receipt? This cannot be undone.';
 
-export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
+export function ExpenseDetailClient({ expense, categories }: ExpenseDetailClientProps) {
   const router = useRouter();
+  const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(categories.map((c) => [c.value, c.label]));
   const receiptFileInputRef = useRef<HTMLInputElement>(null);
   const [expenseState, setExpenseState] = useState(expense);
   const [loadingReceipt, setLoadingReceipt] = useState(false);

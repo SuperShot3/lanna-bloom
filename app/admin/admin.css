@@ -5607,6 +5607,115 @@ select.admin-partner-edit-input {
   white-space: nowrap;
 }
 
+/* Category badge tinted from the category's own DB-managed color (inline style sets bg/color) */
+.admin-badge-category-dynamic {
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Expenses by Category breakdown (donut + legend) */
+.admin-expenses-category-card {
+  background: #fff;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: 12px;
+  padding: 22px 24px;
+  margin-bottom: 16px;
+  box-shadow: var(--admin-shadow-sm, 0 2px 4px rgba(26, 60, 52, 0.04));
+}
+.admin-expenses-category-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.admin-expenses-category-sub {
+  margin: 3px 0 0;
+}
+.admin-expenses-category-body {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+.admin-expenses-category-donut {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  flex: 0 0 auto;
+}
+.admin-expenses-category-donut-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.admin-expenses-category-donut-total-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--admin-text-muted, #6b7280);
+}
+.admin-expenses-category-donut-total-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--admin-text, #111827);
+  font-variant-numeric: tabular-nums;
+}
+.admin-expenses-category-legend {
+  flex: 1;
+  min-width: 280px;
+}
+.admin-expenses-category-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f4f2;
+}
+.admin-expenses-category-legend-row:last-child { border-bottom: none; }
+.admin-expenses-category-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+.admin-expenses-category-legend-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--admin-text, #111827);
+  flex: 1;
+  min-width: 0;
+}
+.admin-expenses-category-legend-count {
+  font-size: 0.76rem;
+  color: var(--admin-text-muted, #6b7280);
+  flex: 0 0 auto;
+}
+.admin-expenses-category-legend-amount {
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--admin-text, #111827);
+  flex: 0 0 auto;
+  min-width: 80px;
+  text-align: right;
+}
+.admin-expenses-category-legend-pct {
+  font-size: 0.76rem;
+  color: var(--admin-text-muted, #6b7280);
+  flex: 0 0 auto;
+  min-width: 40px;
+  text-align: right;
+}
+
 /* Add / New expense form */
 .admin-expenses-new {
   max-width: 560px;
@@ -7114,6 +7223,178 @@ select.admin-partner-edit-input {
 }
 .admin-modal-wide {
   width: 720px;
+}
+
+/* Manage Expense Categories modal */
+.admin-category-modal {
+  width: 560px;
+}
+.admin-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: -20px -20px 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--admin-border, #e5e7eb);
+}
+.admin-modal-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--admin-text, #111827);
+  margin: 0;
+}
+.admin-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--admin-text-muted, #6b7280);
+  cursor: pointer;
+}
+.admin-icon-btn:hover { background: rgba(26, 60, 52, 0.06); color: var(--admin-text, #111827); }
+.admin-icon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.admin-category-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.admin-category-new-card {
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: 10px;
+  padding: 16px;
+  background: var(--admin-card-bg, #f9fafb);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.admin-category-new-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--admin-text, #111827);
+  margin: 0;
+}
+.admin-category-field-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--admin-text-muted, #6b7280);
+  display: block;
+  margin-bottom: 6px;
+}
+.admin-category-name-input { width: 100%; }
+.admin-category-swatch-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.admin-category-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.admin-category-swatch-selected {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--admin-primary, #1a3c34);
+}
+.admin-category-swatch:disabled { cursor: not-allowed; opacity: 0.6; }
+.admin-category-segmented {
+  display: inline-flex;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: 8px;
+  overflow: hidden;
+  width: fit-content;
+}
+.admin-category-segment {
+  padding: 7px 16px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--admin-text-muted, #6b7280);
+  background: #fff;
+  border: none;
+  cursor: pointer;
+}
+.admin-category-segment-active {
+  background: var(--admin-primary, #1a3c34);
+  color: #fff;
+}
+.admin-category-new-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+.admin-category-list-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--admin-text-muted, #6b7280);
+  margin: 4px 0 2px;
+}
+.admin-category-list {
+  display: flex;
+  flex-direction: column;
+}
+.admin-category-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 2px;
+  border-bottom: 1px solid #f1f4f2;
+}
+.admin-category-row:last-child { border-bottom: none; }
+.admin-category-row-archived { opacity: 0.6; }
+.admin-category-row-editing {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 12px;
+  background: var(--admin-card-bg, #f9fafb);
+  border-radius: 8px;
+}
+.admin-category-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+.admin-category-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--admin-text, #111827);
+  flex: 1;
+  min-width: 0;
+}
+.admin-category-cost-pill {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+.admin-category-cost-cogs { background: #e8f0ec; color: #1a3c34; }
+.admin-category-cost-op { background: #eef1f4; color: #475569; }
+.admin-category-archived-pill {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fef2f2;
+  color: #dc2626;
+  flex: 0 0 auto;
+}
+.admin-category-row-actions {
+  display: flex;
+  gap: 2px;
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 .admin-mail-preview {
   border: 1px solid var(--border);

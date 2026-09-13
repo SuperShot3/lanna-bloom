@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/adminRbac';
 import { getExpenses, createExpense } from '@/lib/expenses/expenseQueries';
-import { EXPENSE_CATEGORIES, PAYMENT_METHODS, type DocumentationFilter } from '@/types/expenses';
+import { listExpenseCategories } from '@/lib/expenses/expenseCategoryQueries';
+import { PAYMENT_METHODS, type DocumentationFilter } from '@/types/expenses';
 
-const VALID_CATEGORIES = EXPENSE_CATEGORIES.map((c) => c.value);
 const VALID_PAYMENT_METHODS = PAYMENT_METHODS.map((m) => m.value);
 
 export async function GET(request: NextRequest) {
@@ -80,9 +80,11 @@ export async function POST(request: NextRequest) {
   }
 
   const category = typeof b.category === 'string' ? b.category.trim() : '';
-  if (!VALID_CATEGORIES.includes(category as never)) {
+  const categoriesResult = await listExpenseCategories({ activeOnly: true });
+  const validCategories = categoriesResult.ok ? categoriesResult.categories.map((c) => c.value) : [];
+  if (!validCategories.includes(category)) {
     return NextResponse.json(
-      { error: `category must be one of: ${VALID_CATEGORIES.join(', ')}` },
+      { error: `category must be one of: ${validCategories.join(', ')}` },
       { status: 400 }
     );
   }

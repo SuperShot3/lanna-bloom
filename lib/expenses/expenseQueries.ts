@@ -288,6 +288,49 @@ export async function getExpenses(
   };
 }
 
+/** Full filtered set (no page cap), for CSV export. No order-preview hydration — not needed for CSV. */
+export async function getAllExpensesForExport(filters: ExpenseFilters = {}): Promise<Expense[]> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return [];
+
+  const PAGE_SIZE = 500;
+  const acc: Expense[] = [];
+  let from = 0;
+  for (;;) {
+    let query = supabase.from(TABLE).select('*');
+    if (filters.dateFrom) query = query.gte('date', filters.dateFrom);
+    if (filters.dateTo) query = query.lte('date', filters.dateTo);
+    if (filters.category && filters.category !== 'all') query = query.eq('category', filters.category);
+    if (filters.payment_method && filters.payment_method !== 'all') {
+      query = query.eq('payment_method', filters.payment_method);
+    }
+    if (filters.receipt === 'missing') query = query.eq('receipt_attached', false);
+    if (filters.receipt === 'attached') query = query.eq('receipt_attached', true);
+
+    const { data, error } = await query
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (error) {
+      console.error('[expenseQueries] getAllExpensesForExport error:', error.message);
+      break;
+    }
+    const chunk = (data ?? []).map((row) => normalizeExpenseRow(row as Record<string, unknown>));
+    acc.push(...chunk);
+    if (chunk.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+
+  const doc = filters.documentation;
+  if (doc === 'incomplete' || doc === 'complete') {
+    return acc.filter((e) =>
+      doc === 'incomplete' ? !expenseDocumentationComplete(e) : expenseDocumentationComplete(e)
+    );
+  }
+  return acc;
+}
+
 export async function getExpenseById(id: string): Promise<Expense | null> {
   const supabase = getSupabaseAdmin();
   if (!supabase) return null;
