@@ -6,32 +6,16 @@ import { useNarrowViewport } from '@/hooks/useNarrowViewport';
 import { BoltIcon, CartIcon, StorefrontIcon } from '@/components/icons';
 import styles from './product-pdp.module.css';
 
-function formatAtcLabel(
-  lang: Locale,
-  totalPrice: number,
-  narrow: boolean
-): string {
-  const tProduct = translations[lang].product as Record<string, string | undefined>;
-  const tCart = translations[lang].cart;
-  const template =
-    narrow && tProduct.addToCartWithPriceMobile
-      ? tProduct.addToCartWithPriceMobile
-      : tProduct.addToCartWithPrice ?? `${tCart.addToCart} — ฿{price}`;
-  return template.replace('{price}', totalPrice.toLocaleString());
-}
-
 export function ProductPurchaseActions({
   lang,
-  totalPrice,
-  onAddToCart,
+  onContinue,
   onBuyNow,
   disabled,
   justAdded = false,
   catalogHref,
 }: {
   lang: Locale;
-  totalPrice: number;
-  onAddToCart: () => void;
+  onContinue: () => void;
   onBuyNow: () => void;
   disabled?: boolean;
   justAdded?: boolean;
@@ -41,7 +25,9 @@ export function ProductPurchaseActions({
   const tProduct = translations[lang].product;
   const tCart = translations[lang].cart;
   const narrow = useNarrowViewport();
-  const resolvedAtc = formatAtcLabel(lang, totalPrice, narrow);
+  const resolvedContinueLabel = narrow
+    ? tProduct.continueToGiftDetailsMobile
+    : tProduct.continueToGiftDetails;
   const continueHref = catalogHref ?? `/${lang}/catalog`;
 
   return (
@@ -57,11 +43,11 @@ export function ProductPurchaseActions({
             id="pdp-primary-atc"
             type="button"
             className={styles.purchaseAtc}
-            onClick={onAddToCart}
+            onClick={onContinue}
             disabled={disabled}
           >
             <CartIcon size={20} />
-            {resolvedAtc}
+            {resolvedContinueLabel}
           </button>
           <button
             type="button"

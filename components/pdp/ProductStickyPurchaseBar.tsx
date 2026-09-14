@@ -4,33 +4,18 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { translations, type Locale } from '@/lib/i18n';
-import { useNarrowViewport } from '@/hooks/useNarrowViewport';
 import { CartIcon } from '@/components/icons';
 import { catalogImageUnoptimized } from '@/lib/catalog/catalogImage';
 import styles from './product-pdp.module.css';
 
 const PDP_ATC_SENTINEL_ID = 'pdp-primary-atc';
 
-function formatAtcLabel(
-  lang: Locale,
-  totalPrice: number,
-  narrow: boolean
-): string {
-  const tProduct = translations[lang].product as Record<string, string | undefined>;
-  const tCart = translations[lang].cart;
-  const template =
-    narrow && tProduct.addToCartWithPriceMobile
-      ? tProduct.addToCartWithPriceMobile
-      : tProduct.addToCartWithPrice ?? `${tCart.addToCart} — ฿{price}`;
-  return template.replace('{price}', totalPrice.toLocaleString());
-}
-
 export function ProductStickyPurchaseBar({
   lang,
   productTitle,
   thumbUrl,
   totalPrice,
-  onAddToCart,
+  onContinue,
   disabled,
   justAdded = false,
   onVisibilityChange,
@@ -39,15 +24,15 @@ export function ProductStickyPurchaseBar({
   productTitle: string;
   thumbUrl?: string | null;
   totalPrice: number;
-  onAddToCart: () => void;
+  onContinue: () => void;
   disabled?: boolean;
   justAdded?: boolean;
   onVisibilityChange?: (visible: boolean) => void;
 }) {
   const [visible, setVisible] = useState(false);
-  const narrow = useNarrowViewport();
+  const tProduct = translations[lang].product;
   const tCart = translations[lang].cart;
-  const stickyAtcLabel = formatAtcLabel(lang, totalPrice, narrow);
+  const stickyContinueLabel = tProduct.continueToGiftDetailsMobile;
 
   useEffect(() => {
     const sentinel = document.getElementById(PDP_ATC_SENTINEL_ID);
@@ -103,12 +88,10 @@ export function ProductStickyPurchaseBar({
             <button
               type="button"
               className={styles.stickyAtc}
-              onClick={onAddToCart}
+              onClick={onContinue}
               disabled={disabled}
             >
-              <data className={styles.stickyAtcPrice} value={totalPrice}>
-                {stickyAtcLabel}
-              </data>
+              {stickyContinueLabel}
             </button>
           </div>
           <div

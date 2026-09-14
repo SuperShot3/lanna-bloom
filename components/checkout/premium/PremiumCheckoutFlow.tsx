@@ -211,6 +211,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
     spikeRule != null &&
     (!deliveryDateYmd || shouldApplyPeakCelebrationMarkup(orderYmd, deliveryDateYmd));
   const [cardMessageOpen, setCardMessageOpen] = useState(false);
+  const [recipientPanelOpen, setRecipientPanelOpen] = useState(false);
   const [giftMessageChipsOpen, setGiftMessageChipsOpen] = useState(true);
   const [locationRequestOpen, setLocationRequestOpen] = useState(false);
   const locationRequestTriggerRef = useRef<HTMLButtonElement>(null);
@@ -249,6 +250,22 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
       : t.giftMessageTitle;
   const giftMessageChipActive =
     cardMessageOpen || noCardMessage || hasGiftMessage;
+  const hasRecipientDetails =
+    recipientName.trim().length > 0 && recipientPhoneNational.trim().length > 0;
+  const recipientChipLabel = hasRecipientDetails
+    ? (t.recipientDetailsComplete ?? 'Recipient added')
+    : t.recipientDetailsToggle;
+  const recipientChipActive = recipientPanelOpen || orderingForSomeoneElse;
+
+  const handleRecipientPanelToggle = (next: boolean) => {
+    setRecipientPanelOpen(next);
+    if (next) {
+      onOrderingForSomeoneElseChange(true);
+    } else if (!hasRecipientDetails) {
+      onOrderingForSomeoneElseChange(false);
+      onSurpriseDeliveryChange(false);
+    }
+  };
 
   const hideGiftChipsIfHasText = () => {
     if (!noCardMessage && giftCardMessages.some((m) => m.trim())) {
@@ -612,12 +629,11 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         <div className="co-opt-in-chip-row gap-5">
           <RecipientOptInToggle
             showReveal={false}
-            selected={orderingForSomeoneElse}
-            onSelectedChange={(next) => {
-              onOrderingForSomeoneElseChange(next);
-              if (!next) onSurpriseDeliveryChange(false);
-            }}
-            toggleLabel={t.recipientDetailsToggle}
+            selected={recipientPanelOpen}
+            onSelectedChange={handleRecipientPanelToggle}
+            toggleLabel={recipientChipLabel}
+            chipActive={recipientChipActive}
+            chipComplete={hasRecipientDetails}
           />
           {primaryBouquetIndex(items) >= 0 && (
             <RecipientOptInToggle
@@ -632,12 +648,9 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         </div>
         <RecipientOptInToggle
           showChip={false}
-          selected={orderingForSomeoneElse}
-          onSelectedChange={(next) => {
-            onOrderingForSomeoneElseChange(next);
-            if (!next) onSurpriseDeliveryChange(false);
-          }}
-          toggleLabel={t.recipientDetailsToggle}
+          selected={recipientPanelOpen}
+          onSelectedChange={handleRecipientPanelToggle}
+          toggleLabel={recipientChipLabel}
         >
           <div className="co-card co-card--pad co-recipient-fields">
             <h3 className="co-subsection-title">{t.recipientDetailsSectionTitle}</h3>

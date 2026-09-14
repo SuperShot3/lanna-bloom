@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bouquet, BouquetSize } from '@/lib/bouquets';
 import { SizeSelector } from './SizeSelector';
@@ -16,6 +16,7 @@ import type { CatalogProduct } from '@/lib/catalog/types';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { useProvinceDeliveryConstraint } from '@/hooks/useProvinceDeliveryConstraint';
 import { useOrderGiftCardMessage } from '@/hooks/useOrderGiftCardMessage';
+import { useOrderRecipientDetails } from '@/hooks/useOrderRecipientDetails';
 import { applyCatalogDiscountThb, effectiveCatalogUnitPriceWithExpansion } from '@/lib/catalogDiscount';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
 import {
@@ -36,7 +37,8 @@ import {
 import { ProductPeakCelebrationNotice } from '@/components/pdp/ProductPeakCelebrationNotice';
 import { ProductPurchaseActions } from '@/components/pdp/ProductPurchaseActions';
 import { ProductTrustStrip } from '@/components/pdp/ProductTrustStrip';
-import { ProductGiftMessageRow } from '@/components/pdp/ProductGiftMessageRow';
+import { ProductGiftDetailsSection } from '@/components/pdp/ProductGiftDetailsSection';
+import { OverlayReveal } from '@/components/ui/overlay-reveal';
 import { ProductAddOnsCarousel } from '@/components/pdp/ProductAddOnsCarousel';
 import { ProductStickyPurchaseBar } from '@/components/pdp/ProductStickyPurchaseBar';
 import { ProductDeliveryLine } from '@/components/pdp/ProductDeliveryLine';
@@ -71,13 +73,11 @@ export function ProductOrderBlock({
   const [justAdded, setJustAdded] = useState(false);
   const [stickyBarVisible, setStickyBarVisible] = useState(false);
   const [showPreorderStockContact, setShowPreorderStockContact] = useState(false);
+  const [giftDetailsOpen, setGiftDetailsOpen] = useState(false);
+  const giftDetailsSectionRef = useRef<HTMLDivElement>(null);
   const { addItem } = useCart();
-  const {
-    giftCardMessages,
-    setGiftCardMessageAt,
-    addGiftCardMessage,
-    removeGiftCardMessage,
-  } = useOrderGiftCardMessage();
+  const { giftCardMessages } = useOrderGiftCardMessage();
+  const { recipientName, recipientPhoneNational } = useOrderRecipientDetails();
   const checkoutProfile = useCheckoutDeliveryProfile(lang);
   const tProduct = translations[lang].product;
   const availableForDestination = bouquetIsAvailableForDestination(
@@ -177,10 +177,18 @@ export function ProductOrderBlock({
     });
   };
 
-  const handleAddToCart = () => {
+  const handleContinueToGiftDetails = () => {
+    if (purchaseDisabled) return;
+    setGiftDetailsOpen(true);
+    requestAnimationFrame(() => {
+      giftDetailsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
+  const handleCommitAndGoToCart = () => {
     if (purchaseDisabled) return;
     addToCartCore();
-    setJustAdded(true);
+    router.push(`/${lang}/cart`);
   };
 
   const handleBuyNow = () => {
@@ -188,6 +196,15 @@ export function ProductOrderBlock({
     addToCartCore();
     router.push(`/${lang}/cart`);
   };
+
+  const hasExistingGiftDetails =
+    (giftCardMessages[0] ?? '').trim().length > 0 ||
+    recipientName.trim().length > 0 ||
+    recipientPhoneNational.trim().length > 0;
+
+  useEffect(() => {
+    if (hasExistingGiftDetails) setGiftDetailsOpen(true);
+  }, [hasExistingGiftDetails]);
 
   useEffect(() => {
     if (justAdded) setJustAdded(false);
@@ -275,8 +292,7 @@ export function ProductOrderBlock({
       ) : (
         <ProductPurchaseActions
           lang={lang}
-          totalPrice={totalPrice}
-          onAddToCart={handleAddToCart}
+          onContinue={handleContinueToGiftDetails}
           onBuyNow={handleBuyNow}
           disabled={purchaseDisabled}
           justAdded={justAdded}
@@ -284,18 +300,20 @@ export function ProductOrderBlock({
         />
       )}
 
+      <OverlayReveal open={giftDetailsOpen}>
+        <ProductGiftDetailsSection
+          lang={lang}
+          sectionRef={giftDetailsSectionRef}
+          itemLabel={lang === 'th' ? bouquet.nameTh || bouquet.nameEn : bouquet.nameEn}
+          disabled={purchaseDisabled}
+          onSkip={handleCommitAndGoToCart}
+          onSubmit={handleCommitAndGoToCart}
+        />
+      </OverlayReveal>
+
       <ProductTrustStrip lang={lang} />
 
       <ProductPeakCelebrationNotice lang={lang} />
-
-      <ProductGiftMessageRow
-        lang={lang}
-        messages={giftCardMessages}
-        onChangeAt={setGiftCardMessageAt}
-        onAdd={addGiftCardMessage}
-        onRemove={removeGiftCardMessage}
-        itemLabel={lang === 'th' ? bouquet.nameTh || bouquet.nameEn : bouquet.nameEn}
-      />
 
       <div className={pdpStyles.qtyRow}>
         <span className={pdpStyles.qtyLabel}>{translations[lang].buyNow.quantity ?? 'Quantity'}</span>
@@ -345,7 +363,7 @@ export function ProductOrderBlock({
           productTitle={productTitle}
           thumbUrl={selectedImageUrl}
           totalPrice={totalPrice}
-          onAddToCart={handleAddToCart}
+          onContinue={handleContinueToGiftDetails}
           disabled={purchaseDisabled}
           justAdded={justAdded}
           onVisibilityChange={setStickyBarVisible}

@@ -17,9 +17,17 @@ import {
   clipGiftCardMessage,
   normalizeGiftCardMessagesForUi,
 } from '@/lib/cart/orderGiftCardMessage';
+import {
+  DEFAULT_ORDER_RECIPIENT_DETAILS,
+  clipRecipientName,
+  clipRecipientPhoneNational,
+  normalizeOrderRecipientDetailsForUi,
+  type OrderRecipientDetailsDraft,
+} from '@/lib/cart/orderRecipientDetails';
 
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
 const ORDER_GIFT_MESSAGE_KEY = 'lanna-bloom-order-gift-message';
+const ORDER_RECIPIENT_DETAILS_KEY = 'lanna-bloom-order-recipient-details';
 
 function isLegacySanityImageUrl(url: string | undefined): boolean {
   const raw = (url ?? '').trim();
@@ -87,6 +95,13 @@ interface CartContextValue {
   addOrderGiftCardMessage: () => void;
   /** Remove a slot (keeps at least one empty field). */
   removeOrderGiftCardMessage: (index: number) => void;
+  /** Order-level recipient details draft (shared between PDP and cart). */
+  orderRecipientName: string;
+  orderRecipientCountryCode: string;
+  orderRecipientPhoneNational: string;
+  setOrderRecipientName: (name: string) => void;
+  setOrderRecipientCountryCode: (code: string) => void;
+  setOrderRecipientPhoneNational: (phone: string) => void;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -148,15 +163,39 @@ function saveGiftMessagesDraft(messages: string[]) {
   }
 }
 
+function loadOrderRecipientDetailsDraft(): OrderRecipientDetailsDraft {
+  if (typeof window === 'undefined') return { ...DEFAULT_ORDER_RECIPIENT_DETAILS };
+  try {
+    const raw = localStorage.getItem(ORDER_RECIPIENT_DETAILS_KEY);
+    if (!raw) return { ...DEFAULT_ORDER_RECIPIENT_DETAILS };
+    return normalizeOrderRecipientDetailsForUi(JSON.parse(raw));
+  } catch {
+    return { ...DEFAULT_ORDER_RECIPIENT_DETAILS };
+  }
+}
+
+function saveOrderRecipientDetailsDraft(details: OrderRecipientDetailsDraft) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(ORDER_RECIPIENT_DETAILS_KEY, JSON.stringify(details));
+  } catch {
+    // ignore
+  }
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [orderGiftCardMessages, setOrderGiftCardMessagesState] = useState<string[]>(['']);
+  const [orderRecipientDetails, setOrderRecipientDetailsState] = useState<OrderRecipientDetailsDraft>(
+    DEFAULT_ORDER_RECIPIENT_DETAILS
+  );
   const [hydrated, setHydrated] = useState(false);
   const [lastAddEventId, setLastAddEventId] = useState(0);
 
   useEffect(() => {
     setItems(loadFromStorage());
     setOrderGiftCardMessagesState(loadGiftMessagesDraft());
+    setOrderRecipientDetailsState(loadOrderRecipientDetailsDraft());
     setHydrated(true);
   }, []);
 
@@ -169,6 +208,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (!hydrated) return;
     saveGiftMessagesDraft(orderGiftCardMessages);
   }, [orderGiftCardMessages, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    saveOrderRecipientDetailsDraft(orderRecipientDetails);
+  }, [orderRecipientDetails, hydrated]);
 
   const addItem = useCallback((item: CartItem, quantity: number = 1) => {
     const qty = Math.max(1, Math.floor(quantity));
@@ -237,6 +281,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const clearCart = useCallback(() => {
     setItems([]);
     setOrderGiftCardMessagesState(['']);
+    setOrderRecipientDetailsState(DEFAULT_ORDER_RECIPIENT_DETAILS);
   }, []);
 
   const replaceItems = useCallback((nextItems: CartItem[]) => {
@@ -273,6 +318,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const setOrderRecipientName = useCallback((name: string) => {
+    setOrderRecipientDetailsState((prev) => ({ ...prev, recipientName: clipRecipientName(name) }));
+  }, []);
+
+  const setOrderRecipientCountryCode = useCallback((code: string) => {
+    setOrderRecipientDetailsState((prev) => ({
+      ...prev,
+      recipientCountryCode: code.trim() || prev.recipientCountryCode,
+    }));
+  }, []);
+
+  const setOrderRecipientPhoneNational = useCallback((phone: string) => {
+    setOrderRecipientDetailsState((prev) => ({
+      ...prev,
+      recipientPhoneNational: clipRecipientPhoneNational(phone),
+    }));
+  }, []);
+
   const value = useMemo<CartContextValue>(
     () => ({
       items,
@@ -289,6 +352,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setOrderGiftCardMessageAt,
       addOrderGiftCardMessage,
       removeOrderGiftCardMessage,
+      orderRecipientName: orderRecipientDetails.recipientName,
+      orderRecipientCountryCode: orderRecipientDetails.recipientCountryCode,
+      orderRecipientPhoneNational: orderRecipientDetails.recipientPhoneNational,
+      setOrderRecipientName,
+      setOrderRecipientCountryCode,
+      setOrderRecipientPhoneNational,
     }),
     [
       items,
@@ -304,6 +373,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setOrderGiftCardMessageAt,
       addOrderGiftCardMessage,
       removeOrderGiftCardMessage,
+      orderRecipientDetails,
+      setOrderRecipientName,
+      setOrderRecipientCountryCode,
+      setOrderRecipientPhoneNational,
     ]
   );
 
