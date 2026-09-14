@@ -69,7 +69,6 @@ export function HeroSettingsClient({ settings }: Props) {
   const router = useRouter();
   const mainInputRef = useRef<HTMLInputElement>(null);
   const carouselInputRef = useRef<HTMLInputElement>(null);
-  const carouselBulkInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState<string | null>(null);
   const [bulkUploadCount, setBulkUploadCount] = useState<number | null>(null);
   const [error, setError] = useState('');
@@ -145,17 +144,15 @@ export function HeroSettingsClient({ settings }: Props) {
     event.target.value = '';
   }
 
-  async function handleCarouselUpload(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setPendingCrop({ mode: 'upload-carousel', file });
-    event.target.value = '';
-  }
-
-  async function handleCarouselBulkUpload(event: ChangeEvent<HTMLInputElement>) {
+  async function handleCarouselFilesSelected(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
     event.target.value = '';
     if (!files.length) return;
+
+    if (files.length === 1) {
+      setPendingCrop({ mode: 'upload-carousel', file: files[0] });
+      return;
+    }
 
     clearMessages();
     setBulkUploadCount(files.length);
@@ -328,30 +325,15 @@ export function HeroSettingsClient({ settings }: Props) {
             disabled={isProcessing}
             onClick={() => carouselInputRef.current?.click()}
           >
-            + Add hero image
-          </button>
-          <button
-            type="button"
-            className="admin-cms-btn admin-cms-btn-outline admin-cms-btn-block"
-            disabled={isProcessing}
-            onClick={() => carouselBulkInputRef.current?.click()}
-          >
-            + Add multiple images
+            + Add hero images
           </button>
           <input
             ref={carouselInputRef}
             type="file"
             accept="image/jpeg,image/png,image/webp"
-            className="admin-cms-sr-only"
-            onChange={handleCarouselUpload}
-          />
-          <input
-            ref={carouselBulkInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
             multiple
             className="admin-cms-sr-only"
-            onChange={handleCarouselBulkUpload}
+            onChange={handleCarouselFilesSelected}
           />
         </div>
       </AdminCmsSection>

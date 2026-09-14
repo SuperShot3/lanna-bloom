@@ -115,16 +115,11 @@ export async function uploadCarouselHeroImagesBulkAction(formData: FormData): Pr
 
     for (let i = 0; i < files.length; i++) {
       const storagePath = `site-settings/default-carousel/${batchId}-${i}.webp`;
-      const record = await uploadHeroWebp(
-        files[i],
-        storagePath,
-        alt,
-        heroCarouselImages.length + i
-      );
+      const record = await uploadHeroWebp(files[i], storagePath, alt, i);
       records.push(record);
     }
 
-    const next = normalizeCarouselOrder([...heroCarouselImages, ...records]);
+    const next = normalizeCarouselOrder([...records, ...heroCarouselImages]);
     await upsertCatalogSiteSettings({ heroCarouselImages: next });
     revalidateHeroPaths();
     return {
@@ -150,8 +145,8 @@ export async function uploadCarouselHeroImageAction(formData: FormData): Promise
   try {
     const { heroCarouselImages } = await getCatalogSiteSettingsRowForAdmin();
     const storagePath = `site-settings/default-carousel/${Date.now()}.webp`;
-    const record = await uploadHeroWebp(file, storagePath, alt, heroCarouselImages.length);
-    const next = normalizeCarouselOrder([...heroCarouselImages, record]);
+    const record = await uploadHeroWebp(file, storagePath, alt, 0);
+    const next = normalizeCarouselOrder([record, ...heroCarouselImages]);
     await upsertCatalogSiteSettings({ heroCarouselImages: next });
     revalidateHeroPaths();
     return { message: 'Carousel image added.' };
