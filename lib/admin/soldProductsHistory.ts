@@ -30,11 +30,49 @@ type SoldOrderItemRow = {
 
 type CatalogEntityRow = {
   id: string;
+  legacy_sanity_id: string | null;
   name_en: string | null;
   images: CatalogStoredImage[] | null;
   sold_history_notes: string | null;
   sold_history_images: CatalogStoredImage[] | null;
 };
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isUuid(value: string): boolean {
+  return UUID_RE.test(value);
+}
+
+const CATALOG_ENTITY_SELECT = 'id, legacy_sanity_id, name_en, images, sold_history_notes, sold_history_images';
+
+/**
+ * order_items.bouquet_id has no FK and can hold either the canonical catalog
+ * uuid or a legacy Sanity document id (see resolveCatalogBouquetId) — batch-resolve
+ * both forms so a plain `.in('id', ids)` never crashes on a non-uuid string.
+ */
+async function fetchCatalogEntitiesByRawIds(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  table: 'catalog_bouquets' | 'catalog_products',
+  rawIds: string[]
+): Promise<{ data: CatalogEntityRow[] | null; error: { message: string } | null }> {
+  const uuidIds = rawIds.filter(isUuid);
+  const legacyIds = rawIds.filter((id) => !isUuid(id));
+
+  const [byId, byLegacy] = await Promise.all([
+    uuidIds.length
+      ? supabase!.from(table).select(CATALOG_ENTITY_SELECT).in('id', uuidIds)
+      : Promise.resolve({ data: [] as CatalogEntityRow[], error: null }),
+    legacyIds.length
+      ? supabase!.from(table).select(CATALOG_ENTITY_SELECT).in('legacy_sanity_id', legacyIds)
+      : Promise.resolve({ data: [] as CatalogEntityRow[], error: null }),
+  ]);
+
+  if (byId.error) return { data: null, error: byId.error };
+  if (byLegacy.error) return { data: null, error: byLegacy.error };
+
+  return { data: [...((byId.data ?? []) as CatalogEntityRow[]), ...((byLegacy.data ?? []) as CatalogEntityRow[])], error: null };
+}
 
 function asOrder(value: NestedOrder | NestedOrder[] | null | undefined): NestedOrder | null {
   if (!value) return null;
@@ -86,6 +124,43 @@ export async function fetchSoldProductsHistory(): Promise<
     return { ok: false, error: error instanceof Error ? error.message : 'Query failed', status: 500 };
   }
 
+  // Resolve raw order_items.bouquet_id values (uuid or legacy Sanity id) to their
+  // canonical catalog row *before* grouping, so a product with both old (legacy id)
+  // and new (uuid) sales history merges into a single group instead of splitting
+  // into two rows that each look like a partial sales history.
+  const rawBouquetIds = new Set<string>();
+  const rawProductIds = new Set<string>();
+  for (const raw of (rawRows as SoldOrderItemRow[])) {
+    const productId = trimOrNull(raw.bouquet_id);
+    if (!productId) continue;
+    if (normalizeEntityType(raw.item_type) === 'product') rawProductIds.add(productId);
+    else rawBouquetIds.add(productId);
+  }
+
+  const [bouquetRowsResult, productRowsResult] = await Promise.all([
+    fetchCatalogEntitiesByRawIds(supabase, 'catalog_bouquets', Array.from(rawBouquetIds)),
+    fetchCatalogEntitiesByRawIds(supabase, 'catalog_products', Array.from(rawProductIds)),
+  ]);
+
+  if (bouquetRowsResult.error) {
+    return { ok: false, error: bouquetRowsResult.error.message, status: 500 };
+  }
+  if (productRowsResult.error) {
+    return { ok: false, error: productRowsResult.error.message, status: 500 };
+  }
+
+  // Maps the *raw* order_items.bouquet_id value (uuid or legacy Sanity id) to the
+  // resolved catalog row, so both id forms for the same product land on one entry.
+  const catalogByRawId = new Map<string, CatalogEntityRow>();
+  for (const row of bouquetRowsResult.data ?? []) {
+    catalogByRawId.set(`bouquet:${row.id}`, row);
+    if (row.legacy_sanity_id) catalogByRawId.set(`bouquet:${row.legacy_sanity_id}`, row);
+  }
+  for (const row of productRowsResult.data ?? []) {
+    catalogByRawId.set(`product:${row.id}`, row);
+    if (row.legacy_sanity_id) catalogByRawId.set(`product:${row.legacy_sanity_id}`, row);
+  }
+
   type GroupKey = string;
   type SaleRowWithTitle = SoldProductHistorySaleRow & { title: string | null };
   const buckets = new Map<
@@ -94,11 +169,15 @@ export async function fetchSoldProductsHistory(): Promise<
   >();
 
   for (const raw of (rawRows as SoldOrderItemRow[])) {
-    const productId = trimOrNull(raw.bouquet_id);
+    const rawProductId = trimOrNull(raw.bouquet_id);
     const orderId = trimOrNull(raw.order_id);
-    if (!productId || !orderId) continue;
+    if (!rawProductId || !orderId) continue;
 
     const entityType = normalizeEntityType(raw.item_type);
+    const catalogRow = catalogByRawId.get(`${entityType}:${rawProductId}`);
+    // Group by the canonical catalog id when resolved, falling back to the raw
+    // value only when orphaned (nothing in the catalog resolves it).
+    const productId = catalogRow?.id ?? rawProductId;
     const key: GroupKey = `${entityType}:${productId}`;
     const order = asOrder(raw.orders);
     const paidAt = trimOrNull(order?.paid_at) ?? trimOrNull(order?.created_at);
@@ -121,46 +200,9 @@ export async function fetchSoldProductsHistory(): Promise<
     }
   }
 
-  const bouquetIds = Array.from(buckets.values())
-    .filter((b) => b.entityType === 'bouquet')
-    .map((b) => b.productId);
-  const productIds = Array.from(buckets.values())
-    .filter((b) => b.entityType === 'product')
-    .map((b) => b.productId);
-
-  const [bouquetRowsResult, productRowsResult] = await Promise.all([
-    bouquetIds.length
-      ? supabase
-          .from('catalog_bouquets')
-          .select('id, name_en, images, sold_history_notes, sold_history_images')
-          .in('id', bouquetIds)
-      : Promise.resolve({ data: [] as CatalogEntityRow[], error: null }),
-    productIds.length
-      ? supabase
-          .from('catalog_products')
-          .select('id, name_en, images, sold_history_notes, sold_history_images')
-          .in('id', productIds)
-      : Promise.resolve({ data: [] as CatalogEntityRow[], error: null }),
-  ]);
-
-  if (bouquetRowsResult.error) {
-    return { ok: false, error: bouquetRowsResult.error.message, status: 500 };
-  }
-  if (productRowsResult.error) {
-    return { ok: false, error: productRowsResult.error.message, status: 500 };
-  }
-
-  const catalogById = new Map<string, CatalogEntityRow>();
-  for (const row of (bouquetRowsResult.data ?? []) as CatalogEntityRow[]) {
-    catalogById.set(`bouquet:${row.id}`, row);
-  }
-  for (const row of (productRowsResult.data ?? []) as CatalogEntityRow[]) {
-    catalogById.set(`product:${row.id}`, row);
-  }
-
   const groups: SoldProductHistoryGroup[] = [];
-  for (const [key, bucket] of Array.from(buckets.entries())) {
-    const catalogRow = catalogById.get(key);
+  for (const [, bucket] of Array.from(buckets.entries())) {
+    const catalogRow = catalogByRawId.get(`${bucket.entityType}:${bucket.productId}`);
     const sortedHistory = [...bucket.history].sort((a, b) => paidAtMs(b.paid_at) - paidAtMs(a.paid_at));
     const last = sortedHistory[0];
     const fallbackTitle = sortedHistory.find((row) => row.title)?.title ?? null;

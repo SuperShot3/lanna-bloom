@@ -436,9 +436,33 @@ function AddOnDetail({
         </button>
       </div>
       {inCart ? (
-        <Link href={`/${lang}/cart`} className="addon-detail-goto-cart">
-          <CartIcon size={18} className="addon-detail-goto-cart-icon" />
-          <span className="addon-detail-goto-cart-label">{goToCartLabel}</span>
+        <Link
+          href={`/${lang}/cart`}
+          className="addon-detail-goto-cart"
+          style={{
+            boxSizing: 'border-box',
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            width: '100%',
+            padding: '12px 24px',
+            borderRadius: 999,
+            border: '2px solid var(--accent)',
+            background: 'var(--accent)',
+            color: '#fff',
+            fontSize: '0.95rem',
+            fontWeight: 600,
+            textDecoration: 'none',
+            minHeight: 44,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <span style={{ flexShrink: 0, display: 'inline-flex' }}>
+            <CartIcon size={18} />
+          </span>
+          <span style={{ lineHeight: 1.1 }}>{goToCartLabel}</span>
         </Link>
       ) : null}
       <style jsx>{`
@@ -541,12 +565,6 @@ function AddOnDetail({
           min-height: 44px;
           white-space: nowrap;
           transition: background 0.2s, opacity 0.2s;
-        }
-        .addon-detail-goto-cart-icon {
-          flex-shrink: 0;
-        }
-        .addon-detail-goto-cart-label {
-          line-height: 1.1;
         }
         .addon-detail-goto-cart:hover,
         .addon-detail-goto-cart:focus-visible {
