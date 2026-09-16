@@ -29,6 +29,7 @@ interface SoldHistoryMobileCardProps {
   canEdit: boolean;
   soldCount: number;
   lastPrice: number | null;
+  lastCost: number | null;
   lastSoldAt: string | null;
   onOpenLightbox: (src: string) => void;
 }
@@ -40,17 +41,18 @@ function formatDate(iso: string | null): string {
   return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-function InfoRow({ icon, text }: { icon: string; text: string }) {
+function InfoRow({ icon, value, label }: { icon: string; value: string; label: string }) {
   return (
-    <div className="flex items-center gap-1.5 text-[12.5px] text-gray-500">
+    <div className="flex items-center gap-1.5">
       <span
         className="material-symbols-outlined shrink-0"
-        style={{ fontSize: 15, color: MINT_ICON }}
+        style={{ fontSize: 14, color: MINT_ICON }}
         aria-hidden
       >
         {icon}
       </span>
-      <span className="truncate">{text}</span>
+      <span className="truncate text-[12.5px] font-medium leading-none text-gray-600">{value}</span>
+      <span className="shrink-0 text-[12px] leading-none text-gray-400">{label}</span>
     </div>
   );
 }
@@ -509,6 +511,7 @@ export function SoldHistoryMobileCard({
   canEdit,
   soldCount,
   lastPrice,
+  lastCost,
   lastSoldAt,
   onOpenLightbox,
 }: SoldHistoryMobileCardProps) {
@@ -534,7 +537,7 @@ export function SoldHistoryMobileCard({
             : 'border border-[#CFEADF] bg-[#F1FAF6] active:bg-[#E8F4EC]'
         }`}
       >
-        <div className="h-[128px] w-[38%] shrink-0 overflow-hidden rounded-xl bg-gray-50">
+        <div className="h-[156px] w-[38%] shrink-0 overflow-hidden rounded-xl bg-gray-50">
           {group.thumbnail_url ? (
             <button
               type="button"
@@ -557,17 +560,34 @@ export function SoldHistoryMobileCard({
           )}
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col justify-center gap-2 py-1 pr-6">
-          <h3 className="truncate text-[15px] font-semibold leading-snug text-gray-900">
-            {group.name}
-            {group.is_orphaned ? (
-              <span className="ml-1 text-[11px] font-normal text-gray-400">· archived</span>
-            ) : null}
-          </h3>
-          <div className="flex flex-col gap-1">
-            <InfoRow icon="sell" text={`${soldCount} sold`} />
-            <InfoRow icon="payments" text={`${formatThb(lastPrice)} last price`} />
-            <InfoRow icon="calendar_month" text={`${formatDate(lastSoldAt)} last sold`} />
+        <div className="flex min-w-0 flex-1 flex-col justify-between py-1 pr-6">
+          <div className="flex flex-col gap-1.5">
+            <h3 className="truncate text-[12px] font-medium leading-snug text-gray-400">
+              {group.name}
+              {group.is_orphaned ? <span className="ml-1">· archived</span> : null}
+            </h3>
+            <InfoRow icon="sell" value={String(soldCount)} label="sold" />
+            <InfoRow icon="calendar_month" value={formatDate(lastSoldAt)} label="last sold" />
+          </div>
+
+          <div className="flex items-end gap-3">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-gray-400">
+                Last price
+              </span>
+              <span className="text-[19px] font-bold leading-tight text-gray-900">
+                {formatThb(lastPrice)}
+              </span>
+            </div>
+            <div className="mb-0.5 h-8 w-px shrink-0 bg-gray-200" />
+            <div className="flex flex-col">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-gray-400">
+                Last cost
+              </span>
+              <span className="text-[17px] font-bold leading-tight text-gray-700">
+                {formatThb(lastCost)}
+              </span>
+            </div>
           </div>
         </div>
 

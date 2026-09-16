@@ -90,12 +90,16 @@ export function SoldProductsHistoryClient({ groups, canEdit, initialOrderId }: S
   }, [groups, query, showOrphaned, orderMatchedGroups]);
 
   const periodStatsByKey = useMemo(() => {
-    const map = new Map<string, { count: number; lastPrice: number | null; lastSoldAt: string | null }>();
+    const map = new Map<
+      string,
+      { count: number; lastPrice: number | null; lastCost: number | null; lastSoldAt: string | null }
+    >();
     for (const g of groups) {
       if (period === 'all') {
         map.set(groupKey(g), {
           count: g.times_sold,
           lastPrice: g.last_sold_price,
+          lastCost: g.last_cost,
           lastSoldAt: g.last_sold_at,
         });
         continue;
@@ -104,6 +108,7 @@ export function SoldProductsHistoryClient({ groups, canEdit, initialOrderId }: S
       map.set(groupKey(g), {
         count: sales.length,
         lastPrice: sales[0]?.price ?? null,
+        lastCost: sales[0]?.cost ?? null,
         lastSoldAt: sales[0]?.paid_at ?? null,
       });
     }
@@ -247,6 +252,7 @@ export function SoldProductsHistoryClient({ groups, canEdit, initialOrderId }: S
                   canEdit={canEdit}
                   soldCount={stats?.count ?? group.times_sold}
                   lastPrice={stats?.lastPrice ?? group.last_sold_price}
+                  lastCost={stats?.lastCost ?? group.last_cost}
                   lastSoldAt={stats?.lastSoldAt ?? group.last_sold_at}
                   onOpenLightbox={setLightboxSrc}
                 />
