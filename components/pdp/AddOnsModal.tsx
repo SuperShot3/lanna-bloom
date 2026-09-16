@@ -2,12 +2,15 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import type { CatalogProduct } from '@/lib/catalog/types';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { computeFinalPrice } from '@/lib/partnerPricing';
 import { catalogImageUnoptimized } from '@/lib/catalog/catalogImage';
 import { useGiftCartToggle } from '@/hooks/useGiftCartToggle';
+import { CartIcon } from '@/components/icons';
+import { CatalogDiscountBadge } from '@/components/CatalogDiscountBadge';
 
 export interface AddOnsModalProps {
   lang: Locale;
@@ -27,8 +30,14 @@ export function AddOnsModal({ lang, gifts, isOpen, onClose, triggerRef }: AddOns
     makeItExtraSpecial?: string;
     addOnsModalTitle?: string;
     addOnsModalBack?: string;
+    hitBadge?: string;
+    discountAria?: string;
   };
-  const tCart = translations[lang].cart as { addToCart?: string; addedToCart?: string };
+  const tCart = translations[lang].cart as {
+    addToCart?: string;
+    addedToCart?: string;
+    goToCart?: string;
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -126,6 +135,7 @@ export function AddOnsModal({ lang, gifts, isOpen, onClose, triggerRef }: AddOns
               onToggle={() => toggleGift(selected)}
               addToCartLabel={tCart.addToCart ?? 'Add to cart'}
               addedLabel={tCart.addedToCart ?? 'Added to cart.'}
+              goToCartLabel={tCart.goToCart ?? 'Go to cart'}
             />
           ) : (
             <div className="addons-modal-grid">
@@ -156,6 +166,13 @@ export function AddOnsModal({ lang, gifts, isOpen, onClose, triggerRef }: AddOns
                           unoptimized={catalogImageUnoptimized(imgSrc)}
                         />
                       ) : null}
+                      {product.isHit ? (
+                        <span className="addons-modal-tile-hit">{t.hitBadge ?? 'HIT'}</span>
+                      ) : null}
+                      <CatalogDiscountBadge
+                        discountPercent={product.discountPercent}
+                        ariaLabel={t.discountAria ?? 'On sale — {percent}% off'}
+                      />
                       {inCart ? (
                         <span className="addons-modal-tile-check" aria-hidden>
                           ✓
@@ -287,6 +304,20 @@ export function AddOnsModal({ lang, gifts, isOpen, onClose, triggerRef }: AddOns
           overflow: hidden;
           background: var(--pastel-cream);
         }
+        .addons-modal-tile-hit {
+          position: absolute;
+          top: 6px;
+          left: 6px;
+          z-index: 2;
+          display: inline-block;
+          padding: 3px 8px;
+          border-radius: 999px;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.02em;
+          background: var(--pastel-mint);
+          color: var(--primary);
+        }
         .addons-modal-tile-check {
           position: absolute;
           top: 6px;
@@ -324,6 +355,7 @@ function AddOnDetail({
   onToggle,
   addToCartLabel,
   addedLabel,
+  goToCartLabel,
 }: {
   product: CatalogProduct;
   lang: Locale;
@@ -331,6 +363,7 @@ function AddOnDetail({
   onToggle: () => void;
   addToCartLabel: string;
   addedLabel: string;
+  goToCartLabel: string;
 }) {
   const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
   const description =
@@ -339,6 +372,7 @@ function AddOnDetail({
     '';
   const imgSrc = product.images?.[0] ?? '';
   const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
+  const t = translations[lang].product as { hitBadge?: string; discountAria?: string };
 
   return (
     <div className="addon-detail">
@@ -353,6 +387,13 @@ function AddOnDetail({
             unoptimized={catalogImageUnoptimized(imgSrc)}
           />
         ) : null}
+        {product.isHit ? (
+          <span className="addon-detail-hit">{t.hitBadge ?? 'HIT'}</span>
+        ) : null}
+        <CatalogDiscountBadge
+          discountPercent={product.discountPercent}
+          ariaLabel={t.discountAria ?? 'On sale — {percent}% off'}
+        />
       </div>
       <h3 className="addon-detail-name">{name}</h3>
       {product.sizeLabel ? <p className="addon-detail-size">{product.sizeLabel}</p> : null}
@@ -363,6 +404,12 @@ function AddOnDetail({
           {inCart ? addedLabel : addToCartLabel}
         </button>
       </div>
+      {inCart ? (
+        <Link href={`/${lang}/cart`} className="addon-detail-goto-cart">
+          <CartIcon size={18} />
+          {goToCartLabel}
+        </Link>
+      ) : null}
       <style jsx>{`
         .addon-detail {
           display: flex;
@@ -376,6 +423,20 @@ function AddOnDetail({
           border-radius: var(--radius-sm);
           overflow: hidden;
           background: var(--pastel-cream);
+        }
+        .addon-detail-hit {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          z-index: 2;
+          display: inline-block;
+          padding: 4px 10px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.02em;
+          background: var(--pastel-mint);
+          color: var(--primary);
         }
         .addon-detail-name {
           font-family: var(--font-serif);
@@ -417,6 +478,27 @@ function AddOnDetail({
           font-weight: 600;
           cursor: pointer;
           min-height: 44px;
+        }
+        .addon-detail-goto-cart {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 12px 24px;
+          border-radius: 999px;
+          border: 2px solid var(--accent);
+          background: transparent;
+          color: var(--accent);
+          font-size: 0.95rem;
+          font-weight: 600;
+          text-decoration: none;
+          min-height: 44px;
+          transition: background 0.2s, color 0.2s;
+        }
+        .addon-detail-goto-cart:hover,
+        .addon-detail-goto-cart:focus-visible {
+          background: var(--accent);
+          color: #fff;
         }
       `}</style>
     </div>
