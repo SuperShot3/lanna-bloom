@@ -24,6 +24,8 @@ export type SoldProductHistorySaleRow = {
   cost: number | null;
   shop_id: string | null;
   shop_name: string | null;
+  /** Partner's LINE ID (from their approved application), for a quick contact link. */
+  shop_line_id: string | null;
   image_snapshot: string | null;
   recipient_name: string | null;
   purchase_photo_path: string | null;

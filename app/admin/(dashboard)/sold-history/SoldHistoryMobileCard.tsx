@@ -14,6 +14,8 @@ import { compressReceiptImageForUpload } from '@/lib/receiptImageCompress';
 import { isReceiptImageFile } from '@/lib/isReceiptImageFile';
 import { MAX_RECEIPT_IMAGES_PER_EXPENSE, MAX_RECEIPT_UPLOAD_BYTES } from '@/lib/receiptUploadLimits';
 import { formatThb } from '@/lib/costsUtils';
+import { getLineUserContactUrl } from '@/lib/messenger';
+import { LineIcon } from '@/components/icons/LineIcon';
 import type {
   SoldProductHistoryGroup,
   SoldProductHistorySaleRow,
@@ -366,31 +368,56 @@ function MobileSaleRow({
 }) {
   const router = useRouter();
   const [manageOpen, setManageOpen] = useState(false);
+  const shopContactUrl = sale.shop_line_id ? getLineUserContactUrl(sale.shop_line_id) : null;
 
   return (
     <div className="flex flex-col gap-2.5 rounded-xl border border-gray-200 bg-white p-3">
       <div className="flex items-start justify-between gap-2">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <div className="flex items-baseline gap-2">
-            <span className="text-[13px] font-medium text-gray-800">{formatThb(sale.price)}</span>
-            <span className="text-[11.5px] text-gray-400">COGS {formatThb(sale.cost)}</span>
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-gray-400">
+                Sold for
+              </span>
+              <span className="text-[19px] font-bold leading-tight text-gray-900">
+                {formatThb(sale.price)}
+              </span>
+            </div>
+            <div className="h-8 w-px shrink-0 bg-gray-200" />
+            <div className="flex flex-col">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-gray-400">
+                Cost
+              </span>
+              <span className="text-[16px] font-bold leading-tight text-gray-700">
+                {formatThb(sale.cost)}
+              </span>
+            </div>
           </div>
-          <span className="truncate text-[12px] text-gray-400">
-            {formatDate(sale.paid_at)} · {sale.shop_name ?? '—'}
-            {sale.recipient_name ? ` · ${sale.recipient_name}` : ''}
-          </span>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
           <Link
             href={`/admin/orders/${encodeURIComponent(sale.order_id)}`}
-            className="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11.5px] font-semibold"
-            style={{ color: '#2F6B52', backgroundColor: '#E8F4EC' }}
+            className="inline-flex w-fit items-center gap-1 text-[12px] font-medium underline decoration-dotted underline-offset-2"
+            style={{ color: '#2F6B52' }}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: 14 }} aria-hidden>
+            <span className="material-symbols-outlined" style={{ fontSize: 13 }} aria-hidden>
               open_in_new
             </span>
-            Order
+            {sale.order_id}
           </Link>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {sale.shop_id && shopContactUrl ? (
+            <a
+              href={shopContactUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Contact ${sale.shop_name ?? 'shop'} on LINE`}
+              title={`Contact ${sale.shop_name ?? 'shop'} on LINE`}
+              className="flex h-8 w-8 items-center justify-center rounded-full"
+              style={{ color: '#06C755', backgroundColor: '#E7F9EF' }}
+            >
+              <LineIcon size={16} />
+            </a>
+          ) : null}
           {canEdit ? (
             <button
               type="button"
@@ -410,6 +437,10 @@ function MobileSaleRow({
           ) : null}
         </div>
       </div>
+
+      <span className="text-[12px] text-gray-400">
+        {formatDate(sale.paid_at)} · {sale.shop_name ?? '—'}
+      </span>
 
       <div className="flex flex-wrap items-center gap-3 rounded-xl bg-gray-50 px-2.5 py-2">
         <MobileSaleThumb
@@ -497,7 +528,11 @@ export function SoldHistoryMobileCard({
             setDetailOpen((v) => !v);
           }
         }}
-        className="relative flex cursor-pointer gap-3 rounded-2xl border border-gray-100 bg-white p-2.5 shadow-[0_1px_4px_rgba(16,24,40,0.04)] active:bg-gray-50"
+        className={`relative flex cursor-pointer gap-3 rounded-2xl p-2.5 shadow-[0_1px_4px_rgba(16,24,40,0.04)] ${
+          group.is_orphaned
+            ? 'border border-gray-100 bg-white active:bg-gray-50'
+            : 'border border-[#CFEADF] bg-[#F1FAF6] active:bg-[#E8F4EC]'
+        }`}
       >
         <div className="h-[128px] w-[38%] shrink-0 overflow-hidden rounded-xl bg-gray-50">
           {group.thumbnail_url ? (
@@ -542,14 +577,24 @@ export function SoldHistoryMobileCard({
               type="button"
               aria-label={`More actions for ${group.name}`}
               onClick={(e) => e.stopPropagation()}
-              className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full text-gray-400 hover:bg-gray-50 hover:text-gray-600"
+              className={`absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full ${
+                group.is_orphaned
+                  ? 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
+                  : 'text-[#2F6B52] hover:bg-[#E8F4EC]'
+              }`}
             >
               <span className="material-symbols-outlined" style={{ fontSize: 18 }} aria-hidden>
                 more_vert
               </span>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuContent
+            align="end"
+            onClick={(e) => e.stopPropagation()}
+            className={
+              group.is_orphaned ? undefined : 'border-[#CFEADF] bg-[#F1FAF6] text-[#1A3C34]'
+            }
+          >
             {group.thumbnail_url ? (
               <DropdownMenuItem onSelect={() => onOpenLightbox(group.thumbnail_url as string)}>
                 View photo
@@ -573,7 +618,7 @@ export function SoldHistoryMobileCard({
       </div>
 
       {detailOpen ? (
-        <div className="flex flex-col gap-4 rounded-2xl border border-gray-100 bg-white p-3.5">
+        <div className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-3.5 shadow-[inset_0_1px_2px_rgba(16,24,40,0.03)]">
           <div className="flex items-center justify-between">
             <h4 className="text-[13px] font-semibold text-gray-700">Sale history</h4>
             <button

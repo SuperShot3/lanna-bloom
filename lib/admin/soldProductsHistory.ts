@@ -116,6 +116,34 @@ async function fetchExpensesByOrderId(
   return byOrderId;
 }
 
+/**
+ * Partner contact (LINE ID) for each shop, keyed by the shop id stored on
+ * order_items.source_shop_id (== catalog_partners.id == partner_applications.sanity_partner_id).
+ */
+async function fetchShopLineIdsByShopId(
+  supabase: NonNullable<ReturnType<typeof getSupabaseAdmin>>,
+  shopIds: string[]
+): Promise<Map<string, string | null>> {
+  const byShopId = new Map<string, string | null>();
+  if (shopIds.length === 0) return byShopId;
+
+  type PartnerApplicationRow = { sanity_partner_id: string | null; line_id: string | null };
+  for (const ids of chunk(shopIds, IN_CLAUSE_CHUNK)) {
+    const { data, error } = await supabase
+      .from('partner_applications')
+      .select('sanity_partner_id, line_id')
+      .in('sanity_partner_id', ids);
+    if (error) throw new Error(error.message);
+    for (const row of (data ?? []) as PartnerApplicationRow[]) {
+      const shopId = trimOrNull(row.sanity_partner_id);
+      const lineId = trimOrNull(row.line_id);
+      if (shopId && lineId && !byShopId.has(shopId)) byShopId.set(shopId, lineId);
+    }
+  }
+
+  return byShopId;
+}
+
 type NestedOrder = {
   paid_at?: string | null;
   created_at?: string | null;
@@ -312,6 +340,24 @@ export async function fetchSoldProductsHistory(): Promise<
     );
   }
 
+  const shopIds = Array.from(
+    new Set(
+      (rawRows as SoldOrderItemRow[])
+        .map((raw) => trimOrNull(raw.source_shop_id))
+        .filter((id): id is string => Boolean(id))
+    )
+  );
+  let shopLineIdsByShopId = new Map<string, string | null>();
+  try {
+    shopLineIdsByShopId = await fetchShopLineIdsByShopId(supabase, shopIds);
+  } catch (error) {
+    // Contact info is supplementary — never fail the whole page over it.
+    console.error(
+      '[soldProductsHistory] shop LINE id lookup failed:',
+      error instanceof Error ? error.message : error
+    );
+  }
+
   // Maps the *raw* order_items.bouquet_id value (uuid or legacy Sanity id) to the
   // resolved catalog row, so both id forms for the same product land on one entry.
   const catalogByRawId = new Map<string, CatalogEntityRow>();
@@ -348,6 +394,7 @@ export async function fetchSoldProductsHistory(): Promise<
     if (!itemId) continue;
     const purchasePhotoPath = trimOrNull(raw.purchase_photo_path);
     const deliveryPhotoPath = trimOrNull(raw.delivery_photo_path);
+    const shopId = trimOrNull(raw.source_shop_id);
 
     const saleRow: SaleRowWithTitle = {
       order_id: orderId,
@@ -355,8 +402,9 @@ export async function fetchSoldProductsHistory(): Promise<
       paid_at: paidAt,
       price: parsePrice(raw.price),
       cost: parsePrice(raw.cost),
-      shop_id: trimOrNull(raw.source_shop_id),
+      shop_id: shopId,
       shop_name: trimOrNull(raw.source_shop_name),
+      shop_line_id: shopId ? shopLineIdsByShopId.get(shopId) ?? null : null,
       image_snapshot: trimOrNull(raw.image_url_snapshot),
       recipient_name: trimOrNull(order?.recipient_name),
       purchase_photo_path: purchasePhotoPath,

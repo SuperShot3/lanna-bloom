@@ -18,6 +18,11 @@ const NAV_ITEMS = [
 
 const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed';
 
+/** Poll cadence for the order-chat unread badge: slow while idle, fast for a while after a new message shows up. */
+const CHAT_POLL_IDLE_MS = 60000;
+const CHAT_POLL_ACTIVE_MS = 15000;
+const CHAT_POLL_ACTIVE_WINDOW_MS = 2 * 60 * 1000;
+
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '';
   const router = useRouter();
@@ -61,6 +66,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let previousCount: number | null = null;
+    let activeUntil = 0;
+
     async function loadChatUnread() {
       try {
         const res = await fetch('/api/admin/orders/chat-unread', { cache: 'no-store' });
@@ -71,16 +80,24 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         const data = (await res.json().catch(() => null)) as { count?: unknown } | null;
         if (cancelled) return;
         const count = typeof data?.count === 'number' ? data.count : 0;
+        if (previousCount !== null && count > previousCount) {
+          activeUntil = Date.now() + CHAT_POLL_ACTIVE_WINDOW_MS;
+        }
+        previousCount = count;
         setOrderChatUnread(count > 0 ? count : 0);
       } catch {
         if (!cancelled) setOrderChatUnread(0);
+      } finally {
+        if (!cancelled) {
+          const nextDelay = Date.now() < activeUntil ? CHAT_POLL_ACTIVE_MS : CHAT_POLL_IDLE_MS;
+          timer = setTimeout(loadChatUnread, nextDelay);
+        }
       }
     }
     loadChatUnread();
-    const timer = setInterval(loadChatUnread, 15000);
     return () => {
       cancelled = true;
-      clearInterval(timer);
+      if (timer) clearTimeout(timer);
     };
   }, [pathname]);
 

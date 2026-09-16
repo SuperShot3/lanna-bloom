@@ -76,6 +76,11 @@ import {
 import { formatShopDateTime, shopAddDays, shopTodayYmd } from '@/lib/shopTime';
 import { AdminOpenChatButton } from '@/components/orderChat/AdminOpenChatButton';
 
+/** Poll cadence for per-order chat unread badges: slow while idle, fast for a while after a new message shows up. */
+const CHAT_UNREAD_IDLE_MS = 60000;
+const CHAT_UNREAD_ACTIVE_MS = 15000;
+const CHAT_UNREAD_ACTIVE_WINDOW_MS = 2 * 60 * 1000;
+
 interface DeliveryBoardClientProps {
   initialOrders: SupabaseOrderRow[];
   initialTotal: number;
@@ -910,6 +915,10 @@ export function DeliveryBoardClient({
   useEffect(() => {
     if (!orderChatEnabled) return;
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let previousTotal: number | null = null;
+    let activeUntil = 0;
+
     async function loadUnread() {
       try {
         const res = await fetch('/api/admin/orders/chat-unread', { cache: 'no-store' });
@@ -918,16 +927,26 @@ export function DeliveryBoardClient({
           byOrderId?: Record<string, number>;
         } | null;
         if (cancelled) return;
-        setChatUnreadByOrder(data?.byOrderId ?? {});
+        const byOrderId = data?.byOrderId ?? {};
+        const total = Object.values(byOrderId).reduce((sum, n) => sum + (n || 0), 0);
+        if (previousTotal !== null && total > previousTotal) {
+          activeUntil = Date.now() + CHAT_UNREAD_ACTIVE_WINDOW_MS;
+        }
+        previousTotal = total;
+        setChatUnreadByOrder(byOrderId);
       } catch {
         /* ignore */
+      } finally {
+        if (!cancelled) {
+          const nextDelay = Date.now() < activeUntil ? CHAT_UNREAD_ACTIVE_MS : CHAT_UNREAD_IDLE_MS;
+          timer = setTimeout(loadUnread, nextDelay);
+        }
       }
     }
     loadUnread();
-    const timer = setInterval(loadUnread, 15000);
     return () => {
       cancelled = true;
-      clearInterval(timer);
+      if (timer) clearTimeout(timer);
     };
   }, [orderChatEnabled]);
 
