@@ -93,7 +93,7 @@ export async function resolveCatalogBouquetId(idOrLegacy: string): Promise<strin
   return byId?.id ?? null;
 }
 
-function indexImageUrl(
+export function indexImageUrl(
   supabase: ReturnType<typeof requireSupabase>,
   images: CatalogProductRow['images'] | CatalogBouquetRow['images']
 ): string | undefined {

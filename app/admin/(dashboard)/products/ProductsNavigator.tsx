@@ -189,6 +189,17 @@ export function ProductsNavigator({ index, shelfCollapsed = false, onNavigate }:
             </span>
             {!shelfCollapsed ? <span>Homepage hero</span> : null}
           </Link>
+          <Link
+            href="/admin/products/sold-history"
+            className={`admin-products-studio-hero-link ${pathname.startsWith('/admin/products/sold-history') ? 'active' : ''}`}
+            title={shelfCollapsed ? 'Sold history' : undefined}
+            onClick={() => onNavigate?.()}
+          >
+            <span className="material-symbols-outlined" aria-hidden>
+              history
+            </span>
+            {!shelfCollapsed ? <span>Sold history</span> : null}
+          </Link>
         </section>
         {groups.map((group) => {
           const open = isGroupOpen(group);

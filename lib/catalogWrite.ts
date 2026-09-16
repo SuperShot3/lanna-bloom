@@ -873,6 +873,35 @@ export async function appendCatalogBouquetImage(
   if (error) throw new Error(error.message);
 }
 
+/** Append to the admin-only "sold history" gallery (Products > Sold history page). */
+export async function appendCatalogSoldHistoryImage(
+  entityType: 'bouquet' | 'product',
+  entityId: string,
+  image: CatalogWriteImageInput
+): Promise<void> {
+  const supabase = requireSupabase();
+  const table = entityType === 'product' ? 'catalog_products' : 'catalog_bouquets';
+
+  const { data: row, error: loadError } = await supabase
+    .from(table)
+    .select('sold_history_images')
+    .eq('id', entityId)
+    .maybeSingle();
+
+  if (loadError) throw new Error(loadError.message);
+  if (!row) throw new Error(`${entityType === 'product' ? 'Product' : 'Bouquet'} not found`);
+
+  const existing = (row.sold_history_images ?? []) as CatalogStoredImage[];
+  const next = [...existing, ...writeImagesToStored(supabase, [{ ...image, isPrimary: false }])];
+
+  const { error } = await supabase
+    .from(table)
+    .update({ sold_history_images: next, updated_at: new Date().toISOString() })
+    .eq('id', entityId);
+
+  if (error) throw new Error(error.message);
+}
+
 export async function updateCatalogProductByAdmin(
   productId: string,
   input: UpdateCatalogProductByAdminInput
