@@ -10135,6 +10135,35 @@ select.admin-partner-edit-input {
   object-fit: cover;
 }
 
+.admin-sold-history-sale-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  margin: 4px 0 10px;
+}
+
+.admin-sold-history-sale-image-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 96px;
+}
+
+.admin-sold-history-sale-thumb {
+  width: 96px;
+  height: 96px;
+}
+
+.admin-sold-history-sale-thumb img {
+  width: 96px;
+  height: 96px;
+}
+
 @media (max-width: 720px) {
   .admin-sold-history-detail {
     grid-template-columns: 1fr;

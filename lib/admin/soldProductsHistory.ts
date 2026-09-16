@@ -2,6 +2,7 @@ import 'server-only';
 
 import { fetchAllSupabasePages } from '@/lib/catalog/supabasePagination';
 import { indexImageUrl } from '@/lib/catalogAdmin';
+import { createOrderItemPhotoSignedUrl } from '@/lib/admin/itemPurchasePhoto';
 import type { CatalogStoredImage } from '@/lib/catalog/types';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import type {
@@ -14,17 +15,21 @@ import type {
 type NestedOrder = {
   paid_at?: string | null;
   created_at?: string | null;
+  recipient_name?: string | null;
 };
 
 type SoldOrderItemRow = {
+  id?: number | string | null;
   order_id?: string | null;
   bouquet_id?: string | null;
   bouquet_title?: string | null;
   item_type?: string | null;
   price?: number | string | null;
+  cost?: number | string | null;
   image_url_snapshot?: string | null;
   source_shop_id?: string | null;
   source_shop_name?: string | null;
+  purchase_photo_path?: string | null;
   orders?: NestedOrder | NestedOrder[] | null;
 };
 
@@ -114,7 +119,7 @@ export async function fetchSoldProductsHistory(): Promise<
       supabase
         .from('order_items')
         .select(
-          'order_id, bouquet_id, bouquet_title, item_type, price, image_url_snapshot, source_shop_id, source_shop_name, orders!inner(paid_at, created_at, payment_status, order_status)'
+          'id, order_id, bouquet_id, bouquet_title, item_type, price, cost, image_url_snapshot, source_shop_id, source_shop_name, purchase_photo_path, orders!inner(paid_at, created_at, payment_status, order_status, recipient_name)'
         )
         .eq('orders.payment_status', 'PAID')
         .neq('orders.order_status', 'CANCELLED')
@@ -149,6 +154,23 @@ export async function fetchSoldProductsHistory(): Promise<
     return { ok: false, error: productRowsResult.error.message, status: 500 };
   }
 
+  // Batch-resolve signed URLs for COGS receipt photos (private `receipts` bucket,
+  // same mechanism as the order-detail purchase-history panel).
+  const purchasePhotoPaths = Array.from(
+    new Set(
+      (rawRows as SoldOrderItemRow[])
+        .map((raw) => trimOrNull(raw.purchase_photo_path))
+        .filter((p): p is string => Boolean(p))
+    )
+  );
+  const purchasePhotoUrlByPath = new Map<string, string>();
+  await Promise.all(
+    purchasePhotoPaths.map(async (path) => {
+      const signed = await createOrderItemPhotoSignedUrl(path);
+      if (signed.ok) purchasePhotoUrlByPath.set(path, signed.signedUrl);
+    })
+  );
+
   // Maps the *raw* order_items.bouquet_id value (uuid or legacy Sanity id) to the
   // resolved catalog row, so both id forms for the same product land on one entry.
   const catalogByRawId = new Map<string, CatalogEntityRow>();
@@ -181,14 +203,22 @@ export async function fetchSoldProductsHistory(): Promise<
     const key: GroupKey = `${entityType}:${productId}`;
     const order = asOrder(raw.orders);
     const paidAt = trimOrNull(order?.paid_at) ?? trimOrNull(order?.created_at);
+    const itemId = raw.id != null ? String(raw.id) : null;
+    if (!itemId) continue;
+    const purchasePhotoPath = trimOrNull(raw.purchase_photo_path);
 
     const saleRow: SaleRowWithTitle = {
       order_id: orderId,
+      item_id: itemId,
       paid_at: paidAt,
       price: parsePrice(raw.price),
+      cost: parsePrice(raw.cost),
       shop_id: trimOrNull(raw.source_shop_id),
       shop_name: trimOrNull(raw.source_shop_name),
       image_snapshot: trimOrNull(raw.image_url_snapshot),
+      recipient_name: trimOrNull(order?.recipient_name),
+      purchase_photo_path: purchasePhotoPath,
+      purchase_photo_url: purchasePhotoPath ? purchasePhotoUrlByPath.get(purchasePhotoPath) ?? null : null,
       title: trimOrNull(raw.bouquet_title),
     };
 
@@ -217,6 +247,8 @@ export async function fetchSoldProductsHistory(): Promise<
       times_sold: history.length,
       last_sold_at: last?.paid_at ?? null,
       last_sold_price: last?.price ?? null,
+      last_cost: last?.cost ?? null,
+      last_shop_name: last?.shop_name ?? null,
       sold_history_notes: catalogRow?.sold_history_notes ?? null,
       sold_history_images: (catalogRow?.sold_history_images ?? []) as CatalogStoredImage[],
       history,

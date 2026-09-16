@@ -1,12 +1,12 @@
 'use client';
 
 import { Fragment, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { OverlayReveal } from '@/components/ui/overlay-reveal';
 import { formatThb } from '@/lib/costsUtils';
 import type { SoldProductHistoryGroup } from '@/lib/admin/soldProductsHistoryTypes';
 import { SoldHistoryNotesEditor } from './SoldHistoryNotesEditor';
 import { SoldHistoryImageGallery } from './SoldHistoryImageGallery';
+import { SoldHistorySaleRow } from './SoldHistorySaleRow';
 
 interface SoldProductsHistoryClientProps {
   groups: SoldProductHistoryGroup[];
@@ -22,13 +22,17 @@ function formatDate(iso: string | null): string {
 
 export function SoldProductsHistoryClient({ groups, canEdit }: SoldProductsHistoryClientProps) {
   const [query, setQuery] = useState('');
+  const [showOrphaned, setShowOrphaned] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return groups;
-    return groups.filter((g) => g.name.toLowerCase().includes(q));
-  }, [groups, query]);
+    return groups.filter((g) => {
+      if (!showOrphaned && g.is_orphaned) return false;
+      if (q && !g.name.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [groups, query, showOrphaned]);
 
   function groupKey(group: SoldProductHistoryGroup): string {
     return `${group.entity_type}:${group.product_id}`;
@@ -50,16 +54,26 @@ export function SoldProductsHistoryClient({ groups, canEdit }: SoldProductsHisto
         </div>
       </div>
 
-      <label className="admin-form-group" style={{ maxWidth: 360, marginBottom: 16 }}>
-        <span className="sr-only">Search products</span>
-        <input
-          type="search"
-          className="admin-input"
-          placeholder="Search by product name…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-      </label>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
+        <label className="admin-form-group" style={{ maxWidth: 360, marginBottom: 0 }}>
+          <span className="sr-only">Search products</span>
+          <input
+            type="search"
+            className="admin-input"
+            placeholder="Search by product name…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.9rem' }}>
+          <input
+            type="checkbox"
+            checked={showOrphaned}
+            onChange={(e) => setShowOrphaned(e.target.checked)}
+          />
+          Show products no longer in catalog
+        </label>
+      </div>
 
       {filtered.length === 0 ? (
         <p className="admin-hint">No sold products found.</p>
@@ -71,6 +85,8 @@ export function SoldProductsHistoryClient({ groups, canEdit }: SoldProductsHisto
                 <th>Product</th>
                 <th>Times sold</th>
                 <th className="admin-expenses-col-amount">Last price</th>
+                <th className="admin-expenses-col-amount">Last COGS</th>
+                <th>Last shop</th>
                 <th>Last sold</th>
                 <th></th>
               </tr>
@@ -104,6 +120,8 @@ export function SoldProductsHistoryClient({ groups, canEdit }: SoldProductsHisto
                       </td>
                       <td>{group.times_sold}</td>
                       <td className="admin-expenses-amount">{formatThb(group.last_sold_price)}</td>
+                      <td className="admin-expenses-amount">{formatThb(group.last_cost)}</td>
+                      <td>{group.last_shop_name ?? '—'}</td>
                       <td>{formatDate(group.last_sold_at)}</td>
                       <td>
                         <button
@@ -117,7 +135,7 @@ export function SoldProductsHistoryClient({ groups, canEdit }: SoldProductsHisto
                       </td>
                     </tr>
                     <tr>
-                      <td colSpan={5} style={{ padding: 0, border: open ? undefined : 'none' }}>
+                      <td colSpan={7} style={{ padding: 0, border: open ? undefined : 'none' }}>
                         <OverlayReveal open={open}>
                           <div className="admin-sold-history-detail">
                             <div className="admin-sold-history-detail-history">
@@ -131,38 +149,20 @@ export function SoldProductsHistoryClient({ groups, canEdit }: SoldProductsHisto
                                       <tr>
                                         <th>Date</th>
                                         <th className="admin-expenses-col-amount">Price</th>
+                                        <th className="admin-expenses-col-amount">COGS</th>
                                         <th>Shop</th>
-                                        <th>Image at time of sale</th>
+                                        <th>Recipient</th>
                                         <th>Order</th>
+                                        <th></th>
                                       </tr>
                                     </thead>
                                     <tbody>
                                       {group.history.map((sale, idx) => (
-                                        <tr key={`${sale.order_id}-${idx}`}>
-                                          <td>{formatDate(sale.paid_at)}</td>
-                                          <td className="admin-expenses-amount">
-                                            {formatThb(sale.price)}
-                                          </td>
-                                          <td>{sale.shop_name ?? '—'}</td>
-                                          <td>
-                                            {sale.image_snapshot ? (
-                                              <span className="admin-products-studio-item-thumb">
-                                                {/* eslint-disable-next-line @next/next/no-img-element -- historical snapshot */}
-                                                <img src={sale.image_snapshot} alt="" />
-                                              </span>
-                                            ) : (
-                                              '—'
-                                            )}
-                                          </td>
-                                          <td>
-                                            <Link
-                                              href={`/admin/orders/${encodeURIComponent(sale.order_id)}`}
-                                              className="admin-link"
-                                            >
-                                              {sale.order_id}
-                                            </Link>
-                                          </td>
-                                        </tr>
+                                        <SoldHistorySaleRow
+                                          key={`${sale.order_id}-${sale.item_id}-${idx}`}
+                                          sale={sale}
+                                          canEdit={canEdit}
+                                        />
                                       ))}
                                     </tbody>
                                   </table>
