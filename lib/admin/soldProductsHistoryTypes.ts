@@ -14,6 +14,8 @@ export type SoldProductHistorySaleRow = {
   recipient_name: string | null;
   purchase_photo_path: string | null;
   purchase_photo_url: string | null;
+  delivery_photo_path: string | null;
+  delivery_photo_url: string | null;
 };
 
 export type SoldProductHistoryGroup = {

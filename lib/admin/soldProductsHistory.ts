@@ -3,6 +3,7 @@ import 'server-only';
 import { fetchAllSupabasePages } from '@/lib/catalog/supabasePagination';
 import { indexImageUrl } from '@/lib/catalogAdmin';
 import { createOrderItemPhotoSignedUrl } from '@/lib/admin/itemPurchasePhoto';
+import { createOrderItemDeliveryPhotoSignedUrl } from '@/lib/admin/itemDeliveryPhoto';
 import type { CatalogStoredImage } from '@/lib/catalog/types';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import type {
@@ -30,6 +31,7 @@ type SoldOrderItemRow = {
   source_shop_id?: string | null;
   source_shop_name?: string | null;
   purchase_photo_path?: string | null;
+  delivery_photo_path?: string | null;
   orders?: NestedOrder | NestedOrder[] | null;
 };
 
@@ -119,7 +121,7 @@ export async function fetchSoldProductsHistory(): Promise<
       supabase
         .from('order_items')
         .select(
-          'id, order_id, bouquet_id, bouquet_title, item_type, price, cost, image_url_snapshot, source_shop_id, source_shop_name, purchase_photo_path, orders!inner(paid_at, created_at, payment_status, order_status, recipient_name)'
+          'id, order_id, bouquet_id, bouquet_title, item_type, price, cost, image_url_snapshot, source_shop_id, source_shop_name, purchase_photo_path, delivery_photo_path, orders!inner(paid_at, created_at, payment_status, order_status, recipient_name)'
         )
         .eq('orders.payment_status', 'PAID')
         .neq('orders.order_status', 'CANCELLED')
@@ -171,6 +173,23 @@ export async function fetchSoldProductsHistory(): Promise<
     })
   );
 
+  // Batch-resolve signed URLs for delivered-bouquet photos (private `receipts`
+  // bucket, added by admin/florist after the sale — distinct from the receipt above).
+  const deliveryPhotoPaths = Array.from(
+    new Set(
+      (rawRows as SoldOrderItemRow[])
+        .map((raw) => trimOrNull(raw.delivery_photo_path))
+        .filter((p): p is string => Boolean(p))
+    )
+  );
+  const deliveryPhotoUrlByPath = new Map<string, string>();
+  await Promise.all(
+    deliveryPhotoPaths.map(async (path) => {
+      const signed = await createOrderItemDeliveryPhotoSignedUrl(path);
+      if (signed.ok) deliveryPhotoUrlByPath.set(path, signed.signedUrl);
+    })
+  );
+
   // Maps the *raw* order_items.bouquet_id value (uuid or legacy Sanity id) to the
   // resolved catalog row, so both id forms for the same product land on one entry.
   const catalogByRawId = new Map<string, CatalogEntityRow>();
@@ -206,6 +225,7 @@ export async function fetchSoldProductsHistory(): Promise<
     const itemId = raw.id != null ? String(raw.id) : null;
     if (!itemId) continue;
     const purchasePhotoPath = trimOrNull(raw.purchase_photo_path);
+    const deliveryPhotoPath = trimOrNull(raw.delivery_photo_path);
 
     const saleRow: SaleRowWithTitle = {
       order_id: orderId,
@@ -219,6 +239,8 @@ export async function fetchSoldProductsHistory(): Promise<
       recipient_name: trimOrNull(order?.recipient_name),
       purchase_photo_path: purchasePhotoPath,
       purchase_photo_url: purchasePhotoPath ? purchasePhotoUrlByPath.get(purchasePhotoPath) ?? null : null,
+      delivery_photo_path: deliveryPhotoPath,
+      delivery_photo_url: deliveryPhotoPath ? deliveryPhotoUrlByPath.get(deliveryPhotoPath) ?? null : null,
       title: trimOrNull(raw.bouquet_title),
     };
 

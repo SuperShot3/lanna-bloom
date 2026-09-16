@@ -1,6 +1,7 @@
 'use client';
 
 import { Fragment, useMemo, useState } from 'react';
+import { AdminImageLightbox } from '@/app/admin/components/AdminImageLightbox';
 import { OverlayReveal } from '@/components/ui/overlay-reveal';
 import { formatThb } from '@/lib/costsUtils';
 import type { SoldProductHistoryGroup } from '@/lib/admin/soldProductsHistoryTypes';
@@ -23,7 +24,8 @@ function formatDate(iso: string | null): string {
 export function SoldProductsHistoryClient({ groups, canEdit }: SoldProductsHistoryClientProps) {
   const [query, setQuery] = useState('');
   const [showOrphaned, setShowOrphaned] = useState(false);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -39,7 +41,7 @@ export function SoldProductsHistoryClient({ groups, canEdit }: SoldProductsHisto
   }
 
   function toggle(key: string) {
-    setExpanded((current) => ({ ...current, [key]: !current[key] }));
+    setOpenKey((current) => (current === key ? null : key));
   }
 
   return (
@@ -54,8 +56,8 @@ export function SoldProductsHistoryClient({ groups, canEdit }: SoldProductsHisto
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
-        <label className="admin-form-group" style={{ maxWidth: 360, marginBottom: 0 }}>
+      <div className="admin-sold-history-filters">
+        <label className="admin-form-group admin-sold-history-search">
           <span className="sr-only">Search products</span>
           <input
             type="search"
@@ -65,7 +67,7 @@ export function SoldProductsHistoryClient({ groups, canEdit }: SoldProductsHisto
             onChange={(e) => setQuery(e.target.value)}
           />
         </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.9rem' }}>
+        <label className="admin-sold-history-orphan-toggle">
           <input
             type="checkbox"
             checked={showOrphaned}
@@ -82,34 +84,51 @@ export function SoldProductsHistoryClient({ groups, canEdit }: SoldProductsHisto
           <table className="admin-expenses-table">
             <thead>
               <tr>
+                <th></th>
                 <th>Product</th>
                 <th>Times sold</th>
                 <th className="admin-expenses-col-amount">Last price</th>
                 <th className="admin-expenses-col-amount">Last COGS</th>
                 <th>Last shop</th>
                 <th>Last sold</th>
-                <th></th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((group) => {
                 const key = groupKey(group);
-                const open = Boolean(expanded[key]);
+                const open = openKey === key;
                 return (
                   <Fragment key={key}>
                     <tr>
                       <td>
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn-sm admin-btn-outline"
+                          onClick={() => toggle(key)}
+                          aria-expanded={open}
+                        >
+                          {open ? 'Hide' : 'View'}
+                        </button>
+                      </td>
+                      <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span className="admin-products-studio-item-thumb">
-                            {group.thumbnail_url ? (
-                              // eslint-disable-next-line @next/next/no-img-element
+                          {group.thumbnail_url ? (
+                            <button
+                              type="button"
+                              className="admin-products-studio-item-thumb admin-sold-history-overview-thumb"
+                              onClick={() => setLightboxSrc(group.thumbnail_url)}
+                              aria-label={`View photo for ${group.name}`}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img src={group.thumbnail_url} alt="" />
-                            ) : (
+                            </button>
+                          ) : (
+                            <span className="admin-products-studio-item-thumb">
                               <span className="material-symbols-outlined" aria-hidden>
                                 image
                               </span>
-                            )}
-                          </span>
+                            </span>
+                          )}
                           <span>
                             {group.name}
                             {group.is_orphaned ? (
@@ -123,16 +142,6 @@ export function SoldProductsHistoryClient({ groups, canEdit }: SoldProductsHisto
                       <td className="admin-expenses-amount">{formatThb(group.last_cost)}</td>
                       <td>{group.last_shop_name ?? '—'}</td>
                       <td>{formatDate(group.last_sold_at)}</td>
-                      <td>
-                        <button
-                          type="button"
-                          className="admin-btn admin-btn-sm admin-btn-outline"
-                          onClick={() => toggle(key)}
-                          aria-expanded={open}
-                        >
-                          {open ? 'Hide' : 'View'}
-                        </button>
-                      </td>
                     </tr>
                     <tr>
                       <td colSpan={7} style={{ padding: 0, border: open ? undefined : 'none' }}>
@@ -147,13 +156,13 @@ export function SoldProductsHistoryClient({ groups, canEdit }: SoldProductsHisto
                                   <table className="admin-expenses-table">
                                     <thead>
                                       <tr>
+                                        <th></th>
                                         <th>Date</th>
                                         <th className="admin-expenses-col-amount">Price</th>
                                         <th className="admin-expenses-col-amount">COGS</th>
                                         <th>Shop</th>
                                         <th>Recipient</th>
                                         <th>Order</th>
-                                        <th></th>
                                       </tr>
                                     </thead>
                                     <tbody>
@@ -201,6 +210,10 @@ export function SoldProductsHistoryClient({ groups, canEdit }: SoldProductsHisto
           </table>
         </div>
       )}
+
+      {lightboxSrc ? (
+        <AdminImageLightbox src={lightboxSrc} alt="" onClose={() => setLightboxSrc(null)} />
+      ) : null}
     </div>
   );
 }

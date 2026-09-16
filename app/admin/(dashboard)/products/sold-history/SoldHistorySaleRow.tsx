@@ -29,16 +29,6 @@ export function SoldHistorySaleRow({ sale, canEdit }: SoldHistorySaleRowProps) {
   return (
     <>
       <tr>
-        <td>{formatDate(sale.paid_at)}</td>
-        <td className="admin-expenses-amount">{formatThb(sale.price)}</td>
-        <td className="admin-expenses-amount">{formatThb(sale.cost)}</td>
-        <td>{sale.shop_name ?? '—'}</td>
-        <td>{sale.recipient_name ?? '—'}</td>
-        <td>
-          <Link href={`/admin/orders/${encodeURIComponent(sale.order_id)}`} className="admin-link">
-            {sale.order_id}
-          </Link>
-        </td>
         <td>
           <button
             type="button"
@@ -48,6 +38,16 @@ export function SoldHistorySaleRow({ sale, canEdit }: SoldHistorySaleRowProps) {
           >
             {open ? 'Hide' : 'Images'}
           </button>
+        </td>
+        <td>{formatDate(sale.paid_at)}</td>
+        <td className="admin-expenses-amount">{formatThb(sale.price)}</td>
+        <td className="admin-expenses-amount">{formatThb(sale.cost)}</td>
+        <td>{sale.shop_name ?? '—'}</td>
+        <td>{sale.recipient_name ?? '—'}</td>
+        <td>
+          <Link href={`/admin/orders/${encodeURIComponent(sale.order_id)}`} className="admin-link">
+            {sale.order_id}
+          </Link>
         </td>
       </tr>
       <tr>
@@ -72,6 +72,33 @@ export function SoldHistorySaleRow({ sale, canEdit }: SoldHistorySaleRowProps) {
               </div>
 
               <div className="admin-sold-history-sale-image-card">
+                <span className="admin-hint">Delivered bouquet</span>
+                {sale.delivery_photo_url ? (
+                  <button
+                    type="button"
+                    className="admin-sold-history-gallery-thumb admin-sold-history-sale-thumb"
+                    onClick={() => setLightboxSrc(sale.delivery_photo_url)}
+                    aria-label="View delivered bouquet photo"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element -- signed ops photo */}
+                    <img src={sale.delivery_photo_url} alt="" />
+                  </button>
+                ) : (
+                  <p className="admin-hint">No photo added yet.</p>
+                )}
+                {canEdit ? (
+                  <ItemHistoryPhotoActions
+                    orderId={sale.order_id}
+                    itemId={sale.item_id}
+                    title="the delivered bouquet"
+                    hasPhoto={Boolean(sale.delivery_photo_path)}
+                    photoKind="delivery"
+                    onPhotoChange={() => router.refresh()}
+                  />
+                ) : null}
+              </div>
+
+              <div className="admin-sold-history-sale-image-card">
                 <span className="admin-hint">Receipt</span>
                 {sale.purchase_photo_url ? (
                   <button
@@ -92,6 +119,7 @@ export function SoldHistorySaleRow({ sale, canEdit }: SoldHistorySaleRowProps) {
                     itemId={sale.item_id}
                     title="this sale"
                     hasPhoto={Boolean(sale.purchase_photo_path)}
+                    photoKind="purchase"
                     onPhotoChange={() => router.refresh()}
                   />
                 ) : null}

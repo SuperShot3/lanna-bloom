@@ -10164,8 +10164,67 @@ select.admin-partner-edit-input {
   height: 96px;
 }
 
+.admin-sold-history-overview-thumb {
+  border: none;
+  padding: 0;
+  cursor: zoom-in;
+}
+
+.admin-sold-history-filters {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.admin-sold-history-search {
+  flex: 1 1 240px;
+  max-width: 360px;
+  margin-bottom: 0;
+}
+
+.admin-sold-history-orphan-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.admin-sold-history-orphan-toggle input {
+  width: 18px;
+  height: 18px;
+}
+
 @media (max-width: 720px) {
   .admin-sold-history-detail {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-sold-history-filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .admin-sold-history-search {
+    max-width: none;
+    flex: 1 1 auto;
+  }
+
+  .admin-sold-history-detail,
+  .admin-sold-history-sale-images {
+    padding: 12px;
+    gap: 14px;
+  }
+
+  .admin-sold-history-sale-thumb,
+  .admin-sold-history-sale-thumb img {
+    width: 72px;
+    height: 72px;
   }
 }

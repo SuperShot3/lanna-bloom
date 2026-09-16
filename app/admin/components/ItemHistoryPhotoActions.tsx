@@ -12,6 +12,8 @@ interface ItemHistoryPhotoActionsProps {
   title: string;
   hasPhoto: boolean;
   onPhotoChange?: () => void;
+  /** Which order-item photo this controls — defaults to the COGS purchase receipt. */
+  photoKind?: 'purchase' | 'delivery';
 }
 
 export function ItemHistoryPhotoActions({
@@ -20,7 +22,9 @@ export function ItemHistoryPhotoActions({
   title,
   hasPhoto,
   onPhotoChange,
+  photoKind = 'purchase',
 }: ItemHistoryPhotoActionsProps) {
+  const endpoint = photoKind === 'delivery' ? 'delivery-photo' : 'purchase-photo';
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +49,7 @@ export function ItemHistoryPhotoActions({
       const formData = new FormData();
       formData.append('file', fileToUpload);
       const res = await fetch(
-        `/api/admin/orders/${encodeURIComponent(orderId)}/items/${encodeURIComponent(itemId)}/purchase-photo`,
+        `/api/admin/orders/${encodeURIComponent(orderId)}/items/${encodeURIComponent(itemId)}/${endpoint}`,
         { method: 'POST', body: formData }
       );
       const data = await res.json().catch(() => ({}));
@@ -64,12 +68,12 @@ export function ItemHistoryPhotoActions({
 
   const handleRemove = async () => {
     if (!attached) return;
-    if (!confirmDeleteAction('Remove this purchase photo?')) return;
+    if (!confirmDeleteAction(`Remove this ${photoKind} photo?`)) return;
     setBusy(true);
     setError(null);
     try {
       const res = await fetch(
-        `/api/admin/orders/${encodeURIComponent(orderId)}/items/${encodeURIComponent(itemId)}/purchase-photo`,
+        `/api/admin/orders/${encodeURIComponent(orderId)}/items/${encodeURIComponent(itemId)}/${endpoint}`,
         { method: 'DELETE' }
       );
       const data = await res.json().catch(() => ({}));
@@ -96,7 +100,7 @@ export function ItemHistoryPhotoActions({
           void handleFile(e);
         }}
         style={{ display: 'none' }}
-        aria-label={`Add purchase photo for ${title}`}
+        aria-label={`Add ${photoKind} photo for ${title}`}
       />
       <button
         type="button"
