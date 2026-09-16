@@ -51,26 +51,21 @@ function InfoRow({ icon, text }: { icon: string; text: string }) {
   );
 }
 
-function MobileSalePhotoCard({
+function MobileSaleThumb({
   label,
   src,
-  emptyText,
   onOpenLightbox,
-  editAction,
 }: {
   label: string;
   src: string | null;
-  emptyText: string;
   onOpenLightbox: (src: string) => void;
-  editAction?: React.ReactNode;
 }) {
   return (
-    <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
-      <span className="text-[11px] text-gray-400">{label}</span>
+    <div className="flex flex-col items-center gap-1">
       {src ? (
         <button
           type="button"
-          className="block h-16 w-16 overflow-hidden rounded-lg border border-gray-100 bg-white"
+          className="block h-12 w-12 overflow-hidden rounded-lg border border-gray-100 bg-white"
           onClick={() => onOpenLightbox(src)}
           aria-label={`View ${label.toLowerCase()}`}
         >
@@ -78,9 +73,13 @@ function MobileSalePhotoCard({
           <img src={src} alt="" className="h-full w-full object-cover" />
         </button>
       ) : (
-        <p className="text-[11px] text-gray-300">{emptyText}</p>
+        <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50">
+          <span className="material-symbols-outlined text-gray-300" style={{ fontSize: 16 }} aria-hidden>
+            add_photo_alternate
+          </span>
+        </div>
       )}
-      {editAction}
+      <span className="text-[10px] leading-none text-gray-400">{label}</span>
     </div>
   );
 }
@@ -95,82 +94,92 @@ function MobileSaleRow({
   onOpenLightbox: (src: string) => void;
 }) {
   const router = useRouter();
-  const [photosOpen, setPhotosOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
 
   return (
-    <div className="flex flex-col gap-2 border-b border-gray-50 pb-2 last:border-0 last:pb-0">
-      <div className="flex items-center justify-between gap-2">
+    <div className="flex flex-col gap-2 border-b border-gray-50 pb-3 last:border-0 last:pb-0">
+      <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="text-[13px] font-medium text-gray-800">{formatThb(sale.price)}</span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-[13px] font-medium text-gray-800">{formatThb(sale.price)}</span>
+            <span className="text-[11.5px] text-gray-400">COGS {formatThb(sale.cost)}</span>
+          </div>
           <span className="truncate text-[12px] text-gray-400">
             {formatDate(sale.paid_at)} · {sale.shop_name ?? '—'}
             {sale.recipient_name ? ` · ${sale.recipient_name}` : ''}
           </span>
         </div>
-        <div className="flex shrink-0 items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setPhotosOpen((v) => !v)}
-            className="text-[12px] font-medium"
-            style={{ color: MINT_ICON }}
-            aria-expanded={photosOpen}
-          >
-            {photosOpen ? 'Hide photos' : 'Photos'}
-          </button>
-          <Link
-            href={`/admin/orders/${encodeURIComponent(sale.order_id)}`}
-            className="text-[12px] font-medium"
-            style={{ color: MINT_ICON }}
-          >
-            Order
-          </Link>
-        </div>
+        <Link
+          href={`/admin/orders/${encodeURIComponent(sale.order_id)}`}
+          className="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-[11.5px] font-semibold"
+          style={{ color: '#2F6B52', backgroundColor: '#E8F4EC' }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 14 }} aria-hidden>
+            open_in_new
+          </span>
+          Order
+        </Link>
       </div>
 
-      {photosOpen ? (
-        <div className="flex gap-3 rounded-xl bg-gray-50 p-2.5">
-          <MobileSalePhotoCard
-            label="Product photo"
-            src={sale.image_snapshot}
-            emptyText="None recorded"
-            onOpenLightbox={onOpenLightbox}
-          />
-          <MobileSalePhotoCard
-            label="Delivered"
-            src={sale.delivery_photo_url}
-            emptyText="No photo yet"
-            onOpenLightbox={onOpenLightbox}
-            editAction={
-              canEdit ? (
-                <ItemHistoryPhotoActions
-                  orderId={sale.order_id}
-                  itemId={sale.item_id}
-                  title="the delivered bouquet"
-                  hasPhoto={Boolean(sale.delivery_photo_path)}
-                  photoKind="delivery"
-                  onPhotoChange={() => router.refresh()}
-                />
-              ) : undefined
-            }
-          />
-          <MobileSalePhotoCard
-            label="Receipt"
-            src={sale.purchase_photo_url}
-            emptyText="No receipt yet"
-            onOpenLightbox={onOpenLightbox}
-            editAction={
-              canEdit ? (
-                <ItemHistoryPhotoActions
-                  orderId={sale.order_id}
-                  itemId={sale.item_id}
-                  title="this sale"
-                  hasPhoto={Boolean(sale.purchase_photo_path)}
-                  photoKind="purchase"
-                  onPhotoChange={() => router.refresh()}
-                />
-              ) : undefined
-            }
-          />
+      <div className="flex items-center gap-3 rounded-xl bg-gray-50 px-2.5 py-2">
+        <MobileSaleThumb
+          label="Product"
+          src={sale.image_snapshot}
+          onOpenLightbox={onOpenLightbox}
+        />
+        <MobileSaleThumb
+          label="Delivered"
+          src={sale.delivery_photo_url}
+          onOpenLightbox={onOpenLightbox}
+        />
+        <MobileSaleThumb
+          label="Receipt"
+          src={sale.purchase_photo_url}
+          onOpenLightbox={onOpenLightbox}
+        />
+        {canEdit ? (
+          <button
+            type="button"
+            onClick={() => setManageOpen((v) => !v)}
+            className={`ml-auto inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-[11.5px] font-semibold ${
+              manageOpen
+                ? 'bg-amber-100 text-amber-700'
+                : 'border border-amber-200 bg-white text-amber-600'
+            }`}
+            aria-expanded={manageOpen}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 14 }} aria-hidden>
+              {manageOpen ? 'check' : 'edit'}
+            </span>
+            {manageOpen ? 'Done' : 'Edit'}
+          </button>
+        ) : null}
+      </div>
+
+      {manageOpen && canEdit ? (
+        <div className="flex flex-col gap-2 rounded-xl border border-gray-100 p-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11.5px] text-gray-500">Delivered bouquet</span>
+            <ItemHistoryPhotoActions
+              orderId={sale.order_id}
+              itemId={sale.item_id}
+              title="the delivered bouquet"
+              hasPhoto={Boolean(sale.delivery_photo_path)}
+              photoKind="delivery"
+              onPhotoChange={() => router.refresh()}
+            />
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11.5px] text-gray-500">Receipt</span>
+            <ItemHistoryPhotoActions
+              orderId={sale.order_id}
+              itemId={sale.item_id}
+              title="this sale"
+              hasPhoto={Boolean(sale.purchase_photo_path)}
+              photoKind="purchase"
+              onPhotoChange={() => router.refresh()}
+            />
+          </div>
         </div>
       ) : null}
     </div>
@@ -189,13 +198,29 @@ export function SoldHistoryMobileCard({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="relative flex gap-3 rounded-2xl border border-gray-100 bg-white p-2.5 shadow-[0_1px_4px_rgba(16,24,40,0.04)]">
+      <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={detailOpen}
+        aria-label={`${detailOpen ? 'Hide' : 'View'} sale history for ${group.name}`}
+        onClick={() => setDetailOpen((v) => !v)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setDetailOpen((v) => !v);
+          }
+        }}
+        className="relative flex cursor-pointer gap-3 rounded-2xl border border-gray-100 bg-white p-2.5 shadow-[0_1px_4px_rgba(16,24,40,0.04)] active:bg-gray-50"
+      >
         <div className="h-[128px] w-[38%] shrink-0 overflow-hidden rounded-xl bg-gray-50">
           {group.thumbnail_url ? (
             <button
               type="button"
               className="block h-full w-full"
-              onClick={() => onOpenLightbox(group.thumbnail_url as string)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenLightbox(group.thumbnail_url as string);
+              }}
               aria-label={`View photo for ${group.name}`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -228,7 +253,8 @@ export function SoldHistoryMobileCard({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              aria-label={`Actions for ${group.name}`}
+              aria-label={`More actions for ${group.name}`}
+              onClick={(e) => e.stopPropagation()}
               className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full text-gray-400 hover:bg-gray-50 hover:text-gray-600"
             >
               <span className="material-symbols-outlined" style={{ fontSize: 18 }} aria-hidden>
@@ -236,13 +262,23 @@ export function SoldHistoryMobileCard({
               </span>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => setDetailOpen((v) => !v)}>
-              {detailOpen ? 'Hide sale history' : 'View sale history'}
-            </DropdownMenuItem>
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
             {group.thumbnail_url ? (
               <DropdownMenuItem onSelect={() => onOpenLightbox(group.thumbnail_url as string)}>
                 View photo
+              </DropdownMenuItem>
+            ) : null}
+            {!group.is_orphaned ? (
+              <DropdownMenuItem asChild>
+                <Link
+                  href={
+                    group.entity_type === 'bouquet'
+                      ? `/admin/products/bouquet/${group.product_id}`
+                      : `/admin/products/product/${group.product_id}`
+                  }
+                >
+                  Edit product
+                </Link>
               </DropdownMenuItem>
             ) : null}
           </DropdownMenuContent>
