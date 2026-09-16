@@ -5,13 +5,9 @@ import useEmblaCarousel from 'embla-carousel-react';
 import type { CatalogProduct } from '@/lib/catalog/types';
 import type { Locale } from '@/lib/i18n';
 import { computeFinalPrice } from '@/lib/partnerPricing';
-import { useCart } from '@/contexts/CartContext';
-import { getDefaultAddOns } from '@/components/addOns';
-import { trackAddToCart, trackRemoveFromCart } from '@/lib/analytics';
-import { getProductDisplayCategory } from '@/lib/catalogCategories';
 import interest from '@/components/interestCarouselItem.module.css';
 import { catalogImageUnoptimized } from '@/lib/catalog/catalogImage';
-import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
+import { useGiftCartToggle } from '@/hooks/useGiftCartToggle';
 
 /** Visible name length on gift tiles (full name in title + aria-label; price is not clipped). */
 const GIFT_TILE_NAME_MAX = 7;
@@ -31,90 +27,8 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
     loop: false,
     duration: 22,
   });
-  const { addItem, removeItem, items } = useCart();
-  const checkoutProfile = useCheckoutDeliveryProfile(lang);
+  const { isInCart, toggleGift } = useGiftCartToggle(lang);
   if (!gifts.length) return null;
-
-  const defaultAddOns = getDefaultAddOns();
-
-  const findCartIndex = (product: CatalogProduct) =>
-    items.findIndex(
-      (i) =>
-        i.bouquetId === product.id &&
-        i.itemType === 'product' &&
-        i.size.optionId === 'product_default' &&
-        (i.addOns.cardMessage ?? '').trim() === (defaultAddOns.cardMessage ?? '').trim() &&
-        JSON.stringify(i.addOns.productAddOns ?? {}) === JSON.stringify(defaultAddOns.productAddOns ?? {})
-    );
-
-  const isInCart = (product: CatalogProduct) => findCartIndex(product) >= 0;
-
-  const handleToggleGift = (product: CatalogProduct) => {
-    const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
-    const imgSrc = product.images?.[0] ?? '';
-    const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
-    const index = findCartIndex(product);
-
-    if (index >= 0) {
-      removeItem(index);
-      trackRemoveFromCart({
-        currency: 'THB',
-        value: finalPrice,
-        items: [
-          {
-            item_id: product.id,
-            item_name: name,
-            price: finalPrice,
-            quantity: 1,
-            index: 0,
-            item_category: getProductDisplayCategory(product),
-          },
-        ],
-      });
-    } else {
-      const syntheticSize = {
-        optionId: 'product_default',
-        key: 'm' as const,
-        label: '—',
-        price: finalPrice,
-        description: '',
-        preparationTime: undefined as number | undefined,
-        availability: true,
-      };
-      addItem(
-        {
-          itemType: 'product',
-          bouquetId: product.id,
-          slug: product.slug,
-          nameEn: product.nameEn,
-          nameTh: product.nameTh ?? product.nameEn,
-          imageUrl: imgSrc,
-          size: syntheticSize,
-          addOns: defaultAddOns,
-          excludedDeliveryDestinations: product.excludedDeliveryDestinations,
-          deliveryDestination: checkoutProfile.destinationId,
-          ...(product.discountPercent != null && {
-            catalogDiscountPercent: product.discountPercent,
-          }),
-        },
-        1
-      );
-      trackAddToCart({
-        currency: 'THB',
-        value: finalPrice,
-        items: [
-          {
-            item_id: product.id,
-            item_name: name,
-            price: finalPrice,
-            quantity: 1,
-            index: 0,
-            item_category: getProductDisplayCategory(product),
-          },
-        ],
-      });
-    }
-  };
 
   return (
     <div className="gifts-carousel-wrap">
@@ -133,7 +47,7 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
                   <button
                     type="button"
                     className={`${interest.surface} ${interest.surfaceWithCover}`}
-                    onClick={() => handleToggleGift(product)}
+                    onClick={() => toggleGift(product)}
                     aria-label={inCart ? `${name} — Added` : `${name} — ฿${finalPrice.toLocaleString()} — Add to cart`}
                   >
                     {imgSrc ? (
