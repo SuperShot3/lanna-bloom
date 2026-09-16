@@ -11,8 +11,6 @@ import {
 import { OverlayReveal } from '@/components/ui/overlay-reveal';
 import { formatThb } from '@/lib/costsUtils';
 import type { SoldProductHistoryGroup } from '@/lib/admin/soldProductsHistoryTypes';
-import { SoldHistoryNotesEditor } from './SoldHistoryNotesEditor';
-import { SoldHistoryImageGallery } from './SoldHistoryImageGallery';
 import { SoldHistorySaleRow } from './SoldHistorySaleRow';
 import { SoldHistoryMobileCard } from './SoldHistoryMobileCard';
 
@@ -333,58 +331,35 @@ export function SoldProductsHistoryClient({ groups, canEdit }: SoldProductsHisto
                       <td colSpan={7} style={{ padding: 0, border: open ? undefined : 'none' }}>
                         <OverlayReveal open={open}>
                           <div className="admin-sold-history-detail">
-                            <div className="admin-sold-history-detail-history">
-                              <h4 style={{ marginTop: 0 }}>Sale history</h4>
-                              {group.history.length === 0 ? (
-                                <p className="admin-hint">No sales recorded.</p>
-                              ) : (
-                                <div className="admin-expenses-table-wrap">
-                                  <table className="admin-expenses-table">
-                                    <thead>
-                                      <tr>
-                                        <th></th>
-                                        <th>Date</th>
-                                        <th className="admin-expenses-col-amount">Price</th>
-                                        <th className="admin-expenses-col-amount">COGS</th>
-                                        <th>Shop</th>
-                                        <th>Recipient</th>
-                                        <th>Order</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {group.history.map((sale, idx) => (
-                                        <SoldHistorySaleRow
-                                          key={`${sale.order_id}-${sale.item_id}-${idx}`}
-                                          sale={sale}
-                                          canEdit={canEdit}
-                                        />
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="admin-sold-history-detail-editable">
-                              <SoldHistoryNotesEditor
-                                entityType={group.entity_type}
-                                entityId={group.product_id}
-                                initialNotes={group.sold_history_notes}
-                                canEdit={canEdit && !group.is_orphaned}
-                              />
-                              <SoldHistoryImageGallery
-                                entityType={group.entity_type}
-                                entityId={group.product_id}
-                                images={group.sold_history_images}
-                                canEdit={canEdit && !group.is_orphaned}
-                              />
-                              {group.is_orphaned ? (
-                                <p className="admin-hint">
-                                  This product is no longer in the catalog, so notes and images can’t
-                                  be edited here.
-                                </p>
-                              ) : null}
-                            </div>
+                            <h4 style={{ marginTop: 0 }}>Sale history</h4>
+                            {group.history.length === 0 ? (
+                              <p className="admin-hint">No sales recorded.</p>
+                            ) : (
+                              <div className="admin-expenses-table-wrap">
+                                <table className="admin-expenses-table">
+                                  <thead>
+                                    <tr>
+                                      <th></th>
+                                      <th>Date</th>
+                                      <th className="admin-expenses-col-amount">Price</th>
+                                      <th className="admin-expenses-col-amount">COGS</th>
+                                      <th>Shop</th>
+                                      <th>Recipient</th>
+                                      <th>Order</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {group.history.map((sale, idx) => (
+                                      <SoldHistorySaleRow
+                                        key={`${sale.order_id}-${sale.item_id}-${idx}`}
+                                        sale={sale}
+                                        canEdit={canEdit}
+                                      />
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
                           </div>
                         </OverlayReveal>
                       </td>

@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { AdminImageLightbox } from '@/app/admin/components/AdminImageLightbox';
-import { ItemHistoryPhotoActions } from '@/app/admin/components/ItemHistoryPhotoActions';
 import { OverlayReveal } from '@/components/ui/overlay-reveal';
 import { formatThb } from '@/lib/costsUtils';
 import type { SoldProductHistorySaleRow } from '@/lib/admin/soldProductsHistoryTypes';
+import { SoldHistoryExpenseReceiptCard } from './SoldHistoryExpenseReceiptCard';
+import { SoldHistorySinglePhotoCard } from './SoldHistorySinglePhotoCard';
 
 interface SoldHistorySaleRowProps {
   sale: SoldProductHistorySaleRow;
@@ -22,7 +22,6 @@ function formatDate(iso: string | null): string {
 }
 
 export function SoldHistorySaleRow({ sale, canEdit }: SoldHistorySaleRowProps) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
@@ -71,59 +70,36 @@ export function SoldHistorySaleRow({ sale, canEdit }: SoldHistorySaleRowProps) {
                 )}
               </div>
 
-              <div className="admin-sold-history-sale-image-card">
-                <span className="admin-hint">Delivered bouquet</span>
-                {sale.delivery_photo_url ? (
-                  <button
-                    type="button"
-                    className="admin-sold-history-gallery-thumb admin-sold-history-sale-thumb"
-                    onClick={() => setLightboxSrc(sale.delivery_photo_url)}
-                    aria-label="View delivered bouquet photo"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element -- signed ops photo */}
-                    <img src={sale.delivery_photo_url} alt="" />
-                  </button>
-                ) : (
-                  <p className="admin-hint">No photo added yet.</p>
-                )}
-                {canEdit ? (
-                  <ItemHistoryPhotoActions
-                    orderId={sale.order_id}
-                    itemId={sale.item_id}
-                    title="the delivered bouquet"
-                    hasPhoto={Boolean(sale.delivery_photo_path)}
-                    photoKind="delivery"
-                    onPhotoChange={() => router.refresh()}
-                  />
-                ) : null}
-              </div>
+              <SoldHistorySinglePhotoCard
+                orderId={sale.order_id}
+                itemId={sale.item_id}
+                photoKind="purchase"
+                label="Purchase photo"
+                src={sale.purchase_photo_url}
+                canEdit={canEdit}
+                onOpenLightbox={setLightboxSrc}
+              />
 
-              <div className="admin-sold-history-sale-image-card">
-                <span className="admin-hint">Receipt</span>
-                {sale.purchase_photo_url ? (
-                  <button
-                    type="button"
-                    className="admin-sold-history-gallery-thumb admin-sold-history-sale-thumb"
-                    onClick={() => setLightboxSrc(sale.purchase_photo_url)}
-                    aria-label="View receipt photo"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element -- signed ops photo */}
-                    <img src={sale.purchase_photo_url} alt="" />
-                  </button>
-                ) : (
-                  <p className="admin-hint">No receipt photo yet.</p>
-                )}
-                {canEdit ? (
-                  <ItemHistoryPhotoActions
-                    orderId={sale.order_id}
-                    itemId={sale.item_id}
-                    title="this sale"
-                    hasPhoto={Boolean(sale.purchase_photo_path)}
-                    photoKind="purchase"
-                    onPhotoChange={() => router.refresh()}
-                  />
-                ) : null}
-              </div>
+              {sale.expenses.map((expense) => (
+                <SoldHistoryExpenseReceiptCard
+                  key={expense.expense_id}
+                  expense={expense}
+                  canEdit={canEdit}
+                  onOpenLightbox={setLightboxSrc}
+                />
+              ))}
+
+              {sale.expenses.length === 0 ? (
+                <div className="admin-sold-history-sale-image-card">
+                  <span className="admin-hint">Receipts</span>
+                  <p className="admin-hint">
+                    No expenses linked to this order yet.{' '}
+                    <Link href={`/admin/orders/${encodeURIComponent(sale.order_id)}`} className="admin-link">
+                      Add in Costs &amp; profit
+                    </Link>
+                  </p>
+                </div>
+              ) : null}
             </div>
           </OverlayReveal>
         </td>

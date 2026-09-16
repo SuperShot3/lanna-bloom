@@ -10088,20 +10088,11 @@ select.admin-partner-edit-input {
 
 /* Products > Sold history */
 .admin-sold-history-detail {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 1fr);
-  gap: 20px;
   padding: 16px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
   margin: 4px 0 12px;
-}
-
-.admin-sold-history-detail-editable {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
 }
 
 .admin-sold-history-notes,
@@ -10164,6 +10155,28 @@ select.admin-partner-edit-input {
   height: 96px;
 }
 
+.admin-sold-history-receipt-thumb-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.admin-sold-history-receipt-delete {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: #c53030;
+  padding: 0;
+  cursor: pointer;
+}
+
 .admin-sold-history-overview-thumb {
   border: none;
   padding: 0;
@@ -10196,12 +10209,6 @@ select.admin-partner-edit-input {
 .admin-sold-history-orphan-toggle input {
   width: 18px;
   height: 18px;
-}
-
-@media (max-width: 720px) {
-  .admin-sold-history-detail {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 640px) {

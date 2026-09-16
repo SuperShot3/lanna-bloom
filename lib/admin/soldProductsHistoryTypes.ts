@@ -2,6 +2,20 @@ import type { CatalogStoredImage } from '@/lib/catalog/types';
 
 export type SoldProductEntityType = 'bouquet' | 'product';
 
+export type SoldSaleExpenseReceiptImage = {
+  id: string;
+  url: string;
+  file_name: string | null;
+};
+
+/** An expense linked to this sale's order (Flowers/COGS, Delivery, …), with its receipt images. */
+export type SoldSaleExpense = {
+  expense_id: string;
+  category: string;
+  amount: number | null;
+  images: SoldSaleExpenseReceiptImage[];
+};
+
 export type SoldProductHistorySaleRow = {
   order_id: string;
   item_id: string;
@@ -16,6 +30,8 @@ export type SoldProductHistorySaleRow = {
   purchase_photo_url: string | null;
   delivery_photo_path: string | null;
   delivery_photo_url: string | null;
+  /** Expenses linked to this order (Flowers/COGS, Delivery, …) with their receipt images. */
+  expenses: SoldSaleExpense[];
 };
 
 export type SoldProductHistoryGroup = {

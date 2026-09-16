@@ -11,7 +11,110 @@ import type {
   SoldProductHistoryGroup,
   SoldProductHistorySaleRow,
   SoldProductsHistoryResponse,
+  SoldSaleExpense,
 } from '@/lib/admin/soldProductsHistoryTypes';
+
+const EXPENSE_RECEIPT_BUCKET = 'receipts';
+const EXPENSE_RECEIPT_SIGNED_TTL_SECONDS = 60 * 15;
+const IN_CLAUSE_CHUNK = 200;
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}
+
+/**
+ * Expenses the shop actually files against an order (Flowers/COGS, Delivery, …)
+ * live in the expenses system (`expenses.linked_order_id` -> `expense_receipt_images`),
+ * not on the order_item. One order can carry several. Every linked expense is
+ * returned even with zero images, so the UI can offer "Add photo" for each one.
+ */
+async function fetchExpensesByOrderId(
+  supabase: NonNullable<ReturnType<typeof getSupabaseAdmin>>,
+  orderIds: string[]
+): Promise<Map<string, SoldSaleExpense[]>> {
+  const byOrderId = new Map<string, SoldSaleExpense[]>();
+  if (orderIds.length === 0) return byOrderId;
+
+  type ExpenseRow = {
+    id: string;
+    amount: number | string | null;
+    category: string | null;
+    linked_order_id: string | null;
+  };
+  const expenseRows: ExpenseRow[] = [];
+  for (const ids of chunk(orderIds, IN_CLAUSE_CHUNK)) {
+    const { data, error } = await supabase
+      .from('expenses')
+      .select('id, amount, category, linked_order_id')
+      .in('linked_order_id', ids);
+    if (error) throw new Error(error.message);
+    expenseRows.push(...((data ?? []) as ExpenseRow[]));
+  }
+  if (expenseRows.length === 0) return byOrderId;
+
+  type ReceiptImageRow = { id: string; expense_id: string; file_path: string; file_name: string | null };
+  const images: ReceiptImageRow[] = [];
+  for (const ids of chunk(expenseRows.map((e) => e.id), IN_CLAUSE_CHUNK)) {
+    const { data, error } = await supabase
+      .from('expense_receipt_images')
+      .select('id, expense_id, file_path, file_name')
+      .in('expense_id', ids)
+      .order('created_at', { ascending: true });
+    if (error) throw new Error(error.message);
+    images.push(...((data ?? []) as ReceiptImageRow[]));
+  }
+
+  // One batched signing call per chunk instead of one per file.
+  const signedByPath = new Map<string, string>();
+  const uniquePaths = Array.from(new Set(images.map((i) => i.file_path)));
+  for (const batch of chunk(uniquePaths, IN_CLAUSE_CHUNK)) {
+    const { data, error } = await supabase.storage
+      .from(EXPENSE_RECEIPT_BUCKET)
+      .createSignedUrls(batch, EXPENSE_RECEIPT_SIGNED_TTL_SECONDS);
+    if (error) {
+      console.error('[soldProductsHistory] receipt signing failed:', error.message);
+      continue;
+    }
+    for (const entry of data ?? []) {
+      if (entry.signedUrl && entry.path) signedByPath.set(entry.path, entry.signedUrl);
+    }
+  }
+
+  const imagesByExpenseId = new Map<string, ReceiptImageRow[]>();
+  for (const image of images) {
+    const list = imagesByExpenseId.get(image.expense_id) ?? [];
+    list.push(image);
+    imagesByExpenseId.set(image.expense_id, list);
+  }
+
+  for (const expense of expenseRows) {
+    const orderId = expense.linked_order_id?.trim();
+    if (!orderId) continue;
+
+    const amount =
+      typeof expense.amount === 'number' ? expense.amount : parseFloat(String(expense.amount ?? ''));
+    const imageRows = imagesByExpenseId.get(expense.id) ?? [];
+
+    const list = byOrderId.get(orderId) ?? [];
+    list.push({
+      expense_id: expense.id,
+      category: expense.category?.trim() || 'expense',
+      amount: Number.isFinite(amount) ? amount : null,
+      images: imageRows
+        .map((row) => {
+          const url = signedByPath.get(row.file_path);
+          if (!url) return null;
+          return { id: row.id, url, file_name: row.file_name?.trim() || null };
+        })
+        .filter((img): img is { id: string; url: string; file_name: string | null } => img !== null),
+    });
+    byOrderId.set(orderId, list);
+  }
+
+  return byOrderId;
+}
 
 type NestedOrder = {
   paid_at?: string | null;
@@ -190,6 +293,25 @@ export async function fetchSoldProductsHistory(): Promise<
     })
   );
 
+  // Real filed receipts for the order (Flowers/COGS, Delivery, …) from the expenses system.
+  const orderIds = Array.from(
+    new Set(
+      (rawRows as SoldOrderItemRow[])
+        .map((raw) => trimOrNull(raw.order_id))
+        .filter((id): id is string => Boolean(id))
+    )
+  );
+  let expensesByOrderId = new Map<string, SoldSaleExpense[]>();
+  try {
+    expensesByOrderId = await fetchExpensesByOrderId(supabase, orderIds);
+  } catch (error) {
+    // Expenses/receipts are supplementary — never fail the whole page over them.
+    console.error(
+      '[soldProductsHistory] expenses lookup failed:',
+      error instanceof Error ? error.message : error
+    );
+  }
+
   // Maps the *raw* order_items.bouquet_id value (uuid or legacy Sanity id) to the
   // resolved catalog row, so both id forms for the same product land on one entry.
   const catalogByRawId = new Map<string, CatalogEntityRow>();
@@ -241,6 +363,7 @@ export async function fetchSoldProductsHistory(): Promise<
       purchase_photo_url: purchasePhotoPath ? purchasePhotoUrlByPath.get(purchasePhotoPath) ?? null : null,
       delivery_photo_path: deliveryPhotoPath,
       delivery_photo_url: deliveryPhotoPath ? deliveryPhotoUrlByPath.get(deliveryPhotoPath) ?? null : null,
+      expenses: expensesByOrderId.get(orderId) ?? [],
       title: trimOrNull(raw.bouquet_title),
     };
 
