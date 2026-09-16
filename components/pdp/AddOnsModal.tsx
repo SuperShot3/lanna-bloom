@@ -133,6 +133,7 @@ export function AddOnsModal({ lang, gifts, isOpen, onClose, triggerRef }: AddOns
               lang={lang}
               inCart={isInCart(selected)}
               onToggle={() => toggleGift(selected)}
+              onBack={() => setSelected(null)}
               addToCartLabel={tCart.addToCart ?? 'Add to cart'}
               addedLabel={tCart.addedToCart ?? 'Added to cart.'}
               goToCartLabel={tCart.goToCart ?? 'Go to cart'}
@@ -237,14 +238,24 @@ export function AddOnsModal({ lang, gifts, isOpen, onClose, triggerRef }: AddOns
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          background: transparent;
+          background: var(--pastel-cream);
           border: none;
-          padding: 8px 4px;
-          margin: -8px 0 -8px -4px;
+          border-radius: 999px;
+          padding: 10px 16px 10px 12px;
+          margin: -6px 0 -6px -6px;
+          min-height: 44px;
           font-size: 0.95rem;
           font-weight: 600;
-          color: var(--accent);
+          color: var(--text);
           cursor: pointer;
+          transition: background 0.2s, color 0.2s;
+        }
+        .addons-modal-back:hover,
+        .addons-modal-back:focus-visible {
+          background: var(--accent-soft);
+          color: var(--accent);
+          outline: 2px solid var(--accent);
+          outline-offset: 2px;
         }
         .addons-modal-close {
           flex-shrink: 0;
@@ -288,12 +299,21 @@ export function AddOnsModal({ lang, gifts, isOpen, onClose, triggerRef }: AddOns
         .addons-modal-tile {
           display: flex;
           flex-direction: column;
-          gap: 6px;
-          background: transparent;
-          border: none;
-          padding: 0;
+          gap: 8px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: var(--radius);
+          padding: 10px;
           cursor: pointer;
           text-align: left;
+          box-shadow: var(--shadow);
+          transition: box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .addons-modal-tile:hover,
+        .addons-modal-tile:focus-visible {
+          border-color: var(--accent);
+          box-shadow: var(--shadow-hover);
+          outline: none;
         }
         .addons-modal-tile-image {
           position: relative;
@@ -353,6 +373,7 @@ function AddOnDetail({
   lang,
   inCart,
   onToggle,
+  onBack,
   addToCartLabel,
   addedLabel,
   goToCartLabel,
@@ -361,6 +382,7 @@ function AddOnDetail({
   lang: Locale;
   inCart: boolean;
   onToggle: () => void;
+  onBack: () => void;
   addToCartLabel: string;
   addedLabel: string;
   goToCartLabel: string;
@@ -376,7 +398,12 @@ function AddOnDetail({
 
   return (
     <div className="addon-detail">
-      <div className="addon-detail-image">
+      <button
+        type="button"
+        className="addon-detail-image"
+        onClick={onBack}
+        aria-label="Back to all add-ons"
+      >
         {imgSrc ? (
           <Image
             src={imgSrc}
@@ -394,20 +421,24 @@ function AddOnDetail({
           discountPercent={product.discountPercent}
           ariaLabel={t.discountAria ?? 'On sale — {percent}% off'}
         />
-      </div>
+      </button>
       <h3 className="addon-detail-name">{name}</h3>
       {product.sizeLabel ? <p className="addon-detail-size">{product.sizeLabel}</p> : null}
       {description ? <p className="addon-detail-description">{description}</p> : null}
       <div className="addon-detail-footer">
         <span className="addon-detail-price">฿{finalPrice.toLocaleString()}</span>
-        <button type="button" className="addon-detail-cta" onClick={onToggle}>
+        <button
+          type="button"
+          className={`addon-detail-cta ${inCart ? 'addon-detail-cta--added' : ''}`}
+          onClick={onToggle}
+        >
           {inCart ? addedLabel : addToCartLabel}
         </button>
       </div>
       {inCart ? (
         <Link href={`/${lang}/cart`} className="addon-detail-goto-cart">
-          <CartIcon size={18} />
-          {goToCartLabel}
+          <CartIcon size={18} className="addon-detail-goto-cart-icon" />
+          <span className="addon-detail-goto-cart-label">{goToCartLabel}</span>
         </Link>
       ) : null}
       <style jsx>{`
@@ -418,11 +449,16 @@ function AddOnDetail({
         }
         .addon-detail-image {
           position: relative;
+          display: block;
           width: 100%;
           aspect-ratio: 4 / 3;
           border-radius: var(--radius-sm);
           overflow: hidden;
           background: var(--pastel-cream);
+          border: none;
+          padding: 0;
+          margin: 0;
+          cursor: pointer;
         }
         .addon-detail-hit {
           position: absolute;
@@ -469,36 +505,52 @@ function AddOnDetail({
           color: var(--accent);
         }
         .addon-detail-cta {
+          flex-shrink: 0;
           padding: 12px 24px;
           border-radius: 999px;
-          border: none;
+          border: 2px solid var(--accent);
           background: var(--accent);
           color: #fff;
           font-size: 0.95rem;
           font-weight: 600;
           cursor: pointer;
           min-height: 44px;
+          white-space: nowrap;
+          transition: background 0.2s, color 0.2s;
+        }
+        .addon-detail-cta--added {
+          background: transparent;
+          color: var(--accent);
         }
         .addon-detail-goto-cart {
+          box-sizing: border-box;
           display: flex;
+          flex-direction: row;
           align-items: center;
           justify-content: center;
           gap: 8px;
+          width: 100%;
           padding: 12px 24px;
           border-radius: 999px;
           border: 2px solid var(--accent);
-          background: transparent;
-          color: var(--accent);
+          background: var(--accent);
+          color: #fff;
           font-size: 0.95rem;
           font-weight: 600;
           text-decoration: none;
           min-height: 44px;
-          transition: background 0.2s, color 0.2s;
+          white-space: nowrap;
+          transition: background 0.2s, opacity 0.2s;
+        }
+        .addon-detail-goto-cart-icon {
+          flex-shrink: 0;
+        }
+        .addon-detail-goto-cart-label {
+          line-height: 1.1;
         }
         .addon-detail-goto-cart:hover,
         .addon-detail-goto-cart:focus-visible {
-          background: var(--accent);
-          color: #fff;
+          opacity: 0.9;
         }
       `}</style>
     </div>
