@@ -1538,6 +1538,18 @@ a.admin-delivery-card-mini-img-wrap:focus-visible {
 .admin-delivery-card-header-row .admin-delivery-copy-action--all {
   font-weight: 700;
 }
+.admin-delivery-sold-history-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  color: #2f6b52;
+  background: #e8f4ec;
+  border-color: #cfe9d9;
+}
+.admin-delivery-sold-history-action:hover {
+  background: #dcf0e3;
+}
 .admin-delivery-badge-pay {
   font-size: 0.72rem;
   font-weight: 700;
@@ -5117,6 +5129,11 @@ select.admin-partner-edit-input {
 /* Admin page header */
 .admin-page-header {
   margin-bottom: 24px;
+}
+.admin-delivery-board-sold-history-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 .admin-page-header .admin-title {
   font-size: 1.5rem;
@@ -10209,6 +10226,27 @@ select.admin-partner-edit-input {
 .admin-sold-history-orphan-toggle input {
   width: 18px;
   height: 18px;
+}
+
+.admin-sold-history-order-filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 12px 16px 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #d7ecdf;
+  background: #eef8f2;
+  font-size: 0.9rem;
+  color: #1f5c3f;
+}
+
+@media (min-width: 768px) {
+  .admin-sold-history-order-filter {
+    margin: 0 0 16px;
+  }
 }
 
 @media (max-width: 640px) {

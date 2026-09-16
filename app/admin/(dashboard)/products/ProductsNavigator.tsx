@@ -190,8 +190,8 @@ export function ProductsNavigator({ index, shelfCollapsed = false, onNavigate }:
             {!shelfCollapsed ? <span>Homepage hero</span> : null}
           </Link>
           <Link
-            href="/admin/products/sold-history"
-            className={`admin-products-studio-hero-link ${pathname.startsWith('/admin/products/sold-history') ? 'active' : ''}`}
+            href="/admin/sold-history"
+            className={`admin-products-studio-hero-link ${pathname.startsWith('/admin/sold-history') ? 'active' : ''}`}
             title={shelfCollapsed ? 'Sold history' : undefined}
             onClick={() => onNavigate?.()}
           >

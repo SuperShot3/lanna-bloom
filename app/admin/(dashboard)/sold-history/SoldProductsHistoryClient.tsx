@@ -1,6 +1,7 @@
 'use client';
 
 import { Fragment, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { AdminImageLightbox } from '@/app/admin/components/AdminImageLightbox';
 import {
   DropdownMenu,
@@ -27,6 +28,8 @@ const PERIOD_LABEL: Record<Period, string> = {
 interface SoldProductsHistoryClientProps {
   groups: SoldProductHistoryGroup[];
   canEdit: boolean;
+  /** When set (e.g. arrived via `?order=` from the Delivery board), scope the view to this order. */
+  initialOrderId?: string | null;
 }
 
 function formatDate(iso: string | null): string {
@@ -50,12 +53,25 @@ function saleInPeriod(paidAt: string | null, period: Period, now: Date): boolean
   return isSameMonth(d, lastMonthRef);
 }
 
-export function SoldProductsHistoryClient({ groups, canEdit }: SoldProductsHistoryClientProps) {
+export function SoldProductsHistoryClient({ groups, canEdit, initialOrderId }: SoldProductsHistoryClientProps) {
+  const orderFilter = initialOrderId?.trim() || null;
+
+  const orderMatchedGroups = useMemo(() => {
+    if (!orderFilter) return null;
+    return groups
+      .map((g) => ({ ...g, history: g.history.filter((s) => s.order_id === orderFilter) }))
+      .filter((g) => g.history.length > 0);
+  }, [groups, orderFilter]);
+
   const [query, setQuery] = useState('');
   const [showOrphaned, setShowOrphaned] = useState(false);
-  const [openKey, setOpenKey] = useState<string | null>(null);
+  const [openKey, setOpenKey] = useState<string | null>(
+    orderMatchedGroups && orderMatchedGroups.length === 1
+      ? `${orderMatchedGroups[0].entity_type}:${orderMatchedGroups[0].product_id}`
+      : null
+  );
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
-  const [period, setPeriod] = useState<Period>('month');
+  const [period, setPeriod] = useState<Period>(orderFilter ? 'all' : 'month');
 
   const now = useMemo(() => new Date(), []);
 
@@ -64,13 +80,14 @@ export function SoldProductsHistoryClient({ groups, canEdit }: SoldProductsHisto
   }
 
   const filtered = useMemo(() => {
+    if (orderMatchedGroups) return orderMatchedGroups;
     const q = query.trim().toLowerCase();
     return groups.filter((g) => {
       if (!showOrphaned && g.is_orphaned) return false;
       if (q && !g.name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [groups, query, showOrphaned]);
+  }, [groups, query, showOrphaned, orderMatchedGroups]);
 
   const periodStatsByKey = useMemo(() => {
     const map = new Map<string, { count: number; lastPrice: number | null; lastSoldAt: string | null }>();
@@ -113,6 +130,17 @@ export function SoldProductsHistoryClient({ groups, canEdit }: SoldProductsHisto
 
   return (
     <div className="admin-sold-history">
+      {orderFilter ? (
+        <div className="admin-sold-history-order-filter">
+          <span>
+            Showing sold history for order <strong>{orderFilter}</strong>
+          </span>
+          <Link href="/admin/sold-history" className="admin-link">
+            Clear filter
+          </Link>
+        </div>
+      ) : null}
+
       {/* Mobile: image-first card list */}
       <div className="flex flex-col gap-4 bg-white px-4 pb-6 pt-1 md:hidden">
         <div className="flex items-start justify-between gap-3 pt-3">

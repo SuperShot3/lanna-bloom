@@ -322,6 +322,16 @@ function DeliveryCardPrimaryCopyActions({ order }: { order: SupabaseOrderRow }) 
   const copyAllText = buildOrderSummaryPlainTextFromBoardOrder(order);
   return (
     <div className="admin-delivery-card-top-copy">
+      <Link
+        href={`/admin/sold-history?order=${encodeURIComponent(order.order_id)}`}
+        aria-label={`Open sold history for order ${order.order_id}`}
+        className="admin-btn admin-btn-outline admin-delivery-copy-action admin-delivery-sold-history-action"
+      >
+        <span className="material-symbols-outlined admin-delivery-copy-action-ico" aria-hidden>
+          receipt_long
+        </span>
+        Sold history
+      </Link>
       <AdminCopyTextButton
         text={driverMessengerText}
         ariaLabel="Copy Thai message for driver"
@@ -1280,6 +1290,12 @@ export function DeliveryBoardClient({
         <div>
           <h1 className="admin-title admin-delivery-board-title">Delivery Board</h1>
         </div>
+        <Link href="/admin/sold-history" className="admin-btn admin-btn-outline admin-delivery-board-sold-history-link">
+          <span className="material-symbols-outlined" style={{ fontSize: 18 }} aria-hidden>
+            receipt_long
+          </span>
+          Sold history
+        </Link>
       </header>
 
       {openDeliverySummary.overdueCount > 0 ? (
