@@ -335,7 +335,6 @@ function DeliveryCardPrimaryCopyActions({ order }: { order: SupabaseOrderRow }) 
         <span className="material-symbols-outlined admin-delivery-copy-action-ico" aria-hidden>
           receipt_long
         </span>
-        Sold history
       </Link>
       <AdminCopyTextButton
         text={driverMessengerText}

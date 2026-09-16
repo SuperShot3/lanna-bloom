@@ -440,9 +440,12 @@ function MobileSaleRow({
         </div>
       </div>
 
-      <span className="text-[12px] text-gray-400">
-        {formatDate(sale.paid_at)} · {sale.shop_name ?? '—'}
-      </span>
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-[14px] font-semibold text-gray-800">
+          {sale.shop_name ?? '—'}
+        </span>
+        <span className="text-[11px] text-gray-400">{formatDate(sale.paid_at)}</span>
+      </div>
 
       <div className="flex flex-wrap items-center gap-3 rounded-xl bg-gray-50 px-2.5 py-2">
         <MobileSaleThumb

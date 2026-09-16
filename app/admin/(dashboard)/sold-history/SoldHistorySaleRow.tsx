@@ -38,10 +38,10 @@ export function SoldHistorySaleRow({ sale, canEdit }: SoldHistorySaleRowProps) {
             {open ? 'Hide' : 'Images'}
           </button>
         </td>
-        <td>{formatDate(sale.paid_at)}</td>
+        <td className="admin-hint">{formatDate(sale.paid_at)}</td>
         <td className="admin-expenses-amount">{formatThb(sale.price)}</td>
         <td className="admin-expenses-amount">{formatThb(sale.cost)}</td>
-        <td>{sale.shop_name ?? '—'}</td>
+        <td style={{ fontWeight: 600 }}>{sale.shop_name ?? '—'}</td>
         <td>{sale.recipient_name ?? '—'}</td>
         <td>
           <Link href={`/admin/orders/${encodeURIComponent(sale.order_id)}`} className="admin-link">
