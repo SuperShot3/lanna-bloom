@@ -579,10 +579,10 @@ export function SoldHistoryMobileCard({
             <button
               type="button"
               onClick={() => setDetailOpen(false)}
-              className="flex h-6 w-6 items-center justify-center rounded-full text-gray-400 hover:bg-gray-50"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-gray-900 hover:bg-gray-100"
               aria-label="Close sale history"
             >
-              <span className="material-symbols-outlined" style={{ fontSize: 16 }} aria-hidden>
+              <span className="material-symbols-outlined" style={{ fontSize: 22 }} aria-hidden>
                 close
               </span>
             </button>
