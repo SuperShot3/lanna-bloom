@@ -5190,10 +5190,50 @@ select.admin-partner-edit-input {
 .admin-page-header {
   margin-bottom: 24px;
 }
-.admin-delivery-board-sold-history-link {
+.admin-delivery-board-sold-history {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  min-height: 40px;
+  padding: 0 6px 0 12px;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--admin-primary);
+}
+.admin-delivery-board-sold-history-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.admin-delivery-board-sold-history-chip {
+  padding: 4px 10px;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: 999px;
+  background: #fff;
+  color: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.admin-delivery-board-sold-history-chip.is-active {
+  background: var(--admin-primary);
+  border-color: var(--admin-primary);
+  color: #fff;
+}
+.admin-delivery-board-sold-history-go {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: var(--admin-primary);
+}
+.admin-delivery-board-sold-history-go.is-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 .admin-page-header .admin-title {
   font-size: 1.5rem;

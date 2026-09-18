@@ -890,6 +890,7 @@ export function DeliveryBoardClient({
   const [mapOpen, setMapOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [hideDelivered, setHideDelivered] = useState(true);
+  const [soldHistoryPeriod, setSoldHistoryPeriod] = useState<'month' | 'all' | null>(null);
   const [statusOverrides, setStatusOverrides] = useState<Record<string, OrderStatus>>({});
   const [savingStatus, setSavingStatus] = useState<Record<string, boolean>>({});
   const [statusMessages, setStatusMessages] = useState<
@@ -1308,12 +1309,40 @@ export function DeliveryBoardClient({
         <div>
           <h1 className="admin-title admin-delivery-board-title">Delivery Board</h1>
         </div>
-        <Link href="/admin/sold-history" className="admin-btn admin-btn-outline admin-delivery-board-sold-history-link">
+        <div className="admin-delivery-board-sold-history">
           <span className="material-symbols-outlined" style={{ fontSize: 18 }} aria-hidden>
             receipt_long
           </span>
-          Sold history
-        </Link>
+          <span className="admin-delivery-board-sold-history-label">Sold history</span>
+          {(['month', 'all'] as const).map((p) => (
+            <button
+              key={p}
+              type="button"
+              aria-pressed={soldHistoryPeriod === p}
+              onClick={() => setSoldHistoryPeriod(p)}
+              className={`admin-delivery-board-sold-history-chip${soldHistoryPeriod === p ? ' is-active' : ''}`}
+            >
+              {p === 'month' ? '1 month' : 'All time'}
+            </button>
+          ))}
+          {soldHistoryPeriod ? (
+            <Link
+              href={`/admin/sold-history?period=${soldHistoryPeriod}`}
+              aria-label="Open sold history"
+              className="admin-delivery-board-sold-history-go"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }} aria-hidden>
+                arrow_forward
+              </span>
+            </Link>
+          ) : (
+            <span className="admin-delivery-board-sold-history-go is-disabled" aria-disabled="true">
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }} aria-hidden>
+                arrow_forward
+              </span>
+            </span>
+          )}
+        </div>
       </header>
 
       {openDeliverySummary.overdueCount > 0 ? (

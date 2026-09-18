@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 interface PageProps {
-  searchParams: Promise<{ order?: string }>;
+  searchParams: Promise<{ order?: string; period?: string }>;
 }
 
 export default async function AdminSoldProductsHistoryPage({ searchParams }: PageProps) {
@@ -20,6 +20,7 @@ export default async function AdminSoldProductsHistoryPage({ searchParams }: Pag
 
   const params = await searchParams;
   const orderId = params.order?.trim() || null;
+  const initialPeriod = params.period === 'month' || params.period === 'all' ? params.period : undefined;
 
   const result = await fetchSoldProductsHistory();
   if (!result.ok) {
@@ -35,6 +36,7 @@ export default async function AdminSoldProductsHistoryPage({ searchParams }: Pag
       groups={result.data.groups}
       canEdit={canChangeStatus(role)}
       initialOrderId={orderId}
+      initialPeriod={initialPeriod}
     />
   );
 }

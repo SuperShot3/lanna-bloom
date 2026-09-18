@@ -30,6 +30,8 @@ interface SoldProductsHistoryClientProps {
   canEdit: boolean;
   /** When set (e.g. arrived via `?order=` from the Delivery board), scope the view to this order. */
   initialOrderId?: string | null;
+  /** Period preselected on the Delivery board (`?period=`). */
+  initialPeriod?: Period;
 }
 
 function formatDate(iso: string | null): string {
@@ -53,7 +55,7 @@ function saleInPeriod(paidAt: string | null, period: Period, now: Date): boolean
   return isSameMonth(d, lastMonthRef);
 }
 
-export function SoldProductsHistoryClient({ groups, canEdit, initialOrderId }: SoldProductsHistoryClientProps) {
+export function SoldProductsHistoryClient({ groups, canEdit, initialOrderId, initialPeriod }: SoldProductsHistoryClientProps) {
   const orderFilter = initialOrderId?.trim() || null;
 
   const orderMatchedGroups = useMemo(() => {
@@ -71,7 +73,7 @@ export function SoldProductsHistoryClient({ groups, canEdit, initialOrderId }: S
       : null
   );
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
-  const [period, setPeriod] = useState<Period>(orderFilter ? 'all' : 'month');
+  const [period, setPeriod] = useState<Period>(orderFilter ? 'all' : initialPeriod ?? 'month');
 
   const now = useMemo(() => new Date(), []);
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/adminRbac';
 import { logAudit } from '@/lib/auditLog';
 import { getOrCreateCustomerByEmail, issueCredit } from '@/lib/rewards/creditLedger';
+import { filterKnownEmails } from '@/lib/rewards/knownContacts';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,6 +38,14 @@ export async function POST(request: NextRequest) {
   }
 
   const notes = typeof b.notes === 'string' ? b.notes.trim().slice(0, 500) : null;
+
+  const known = await filterKnownEmails([email]);
+  if (!known.has(email.toLowerCase())) {
+    return NextResponse.json(
+      { error: 'This email is not in your contacts (no orders or newsletter signup). Credit can only go to known contacts.' },
+      { status: 400 }
+    );
+  }
 
   const customerResult = await getOrCreateCustomerByEmail(email);
   if (!customerResult.ok) {

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { RewardsContactsPanel } from './RewardsContactsPanel';
 
 type Customer = {
   id: string;
@@ -46,6 +47,21 @@ export function RewardsAdminClient() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [lookup, setLookup] = useState<LookupState | null>(null);
+  const [customerLink, setCustomerLink] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    setCustomerLink(`${window.location.origin}/en/rewards`);
+  }, []);
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(customerLink);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  };
 
   const runLookup = async (targetEmail: string) => {
     if (!targetEmail.trim()) return;
@@ -122,9 +138,8 @@ export function RewardsAdminClient() {
         <div>
           <h1 className="admin-title">Rewards</h1>
           <p className="admin-hint">
-            Manual store-credit issuance and per-customer ledger lookup. Magic-link customer
-            access, checkout redemption, and targeted campaigns are not built yet — this page
-            validates the credit ledger end-to-end.
+            Issue store credit to people already in your contacts (orders + newsletter), one at a time or in bulk,
+            and look up any customer's ledger. Checkout redemption is not built yet.
           </p>
         </div>
       </header>
@@ -141,6 +156,20 @@ export function RewardsAdminClient() {
       )}
 
       <div className="admin-expenses-form">
+        <div className="admin-form-group">
+          <label htmlFor="rw-link">Customer credit link (same link for everyone)</label>
+          <div className="admin-pay-link-url-row">
+            <input id="rw-link" className="admin-input" readOnly value={customerLink} />
+            <button type="button" className="admin-btn admin-btn-primary" onClick={copyLink}>
+              {copied ? 'Copied' : 'Copy link'}
+            </button>
+          </div>
+          <p className="admin-hint">
+            Customers open this, enter their email and receive a secure sign-in link. Use /th/rewards, /ru/rewards etc.
+            for other languages.
+          </p>
+        </div>
+
         <div className="admin-form-group">
           <label htmlFor="rw-email">Customer email *</label>
           <input
@@ -204,6 +233,8 @@ export function RewardsAdminClient() {
           </button>
         </div>
       </div>
+
+      <RewardsContactsPanel />
 
       {lookup && (
         <section className="admin-section">
