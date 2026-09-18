@@ -71,6 +71,10 @@ const attributionTouchStore = new Map<string, { count: number; resetAt: number }
 const ATTRIBUTION_TOUCH_WINDOW_MS = 60 * 1000; // 1 minute
 const ATTRIBUTION_TOUCH_MAX = 40;
 
+const weddingBouquetDesignerGenerateStore = new Map<string, { count: number; resetAt: number }>();
+const WEDDING_BOUQUET_DESIGNER_GENERATE_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+const WEDDING_BOUQUET_DESIGNER_GENERATE_MAX = 1;
+
 /** Admin login: wrong password attempts per email (in-memory; resets on server restart). */
 const ADMIN_PASSWORD_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const ADMIN_PASSWORD_MAX_FAILURES = 5;
@@ -396,6 +400,25 @@ export function checkOrderChatPostRateLimit(ip: string, orderId: string): boolea
   }
   entry.count++;
   return entry.count <= ORDER_CHAT_POST_MAX;
+}
+
+/** Wedding bouquet designer text generation: 1 per IP per 10 minutes (LLM call, cost control). */
+export function checkWeddingBouquetDesignerGenerateRateLimit(
+  ip: string
+): { allowed: boolean; retryAfterMs: number } {
+  const now = Date.now();
+  const key = `wbd:${ip}`;
+  const entry = weddingBouquetDesignerGenerateStore.get(key);
+  if (!entry || now > entry.resetAt) {
+    weddingBouquetDesignerGenerateStore.set(key, {
+      count: 1,
+      resetAt: now + WEDDING_BOUQUET_DESIGNER_GENERATE_WINDOW_MS,
+    });
+    return { allowed: true, retryAfterMs: 0 };
+  }
+  entry.count++;
+  const allowed = entry.count <= WEDDING_BOUQUET_DESIGNER_GENERATE_MAX;
+  return { allowed, retryAfterMs: allowed ? 0 : Math.max(0, entry.resetAt - now) };
 }
 
 export function checkLoginRateLimit(ip: string): { allowed: boolean; remaining: number } {

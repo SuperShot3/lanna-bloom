@@ -45,6 +45,11 @@ export function canApplyMarketingAds(role: string | undefined): boolean {
   return role === 'OWNER';
 }
 
+/** Rewards / store-credit issuance and campaign management. */
+export function canManageRewards(role: string | undefined): boolean {
+  return role === 'OWNER' || role === 'MANAGER';
+}
+
 export type AuthResult =
   | { ok: true; session: { user: { email?: string | null; role?: string } } }
   | { ok: false; response: NextResponse };

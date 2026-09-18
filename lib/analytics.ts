@@ -43,7 +43,8 @@ export type MessengerPageLocation =
   | 'order_pending_confirmation'
   | 'product'
   | 'cart'
-  | 'guide';
+  | 'guide'
+  | 'wedding_bouquet_designer';
 
 /** In-memory dedupe: prevent duplicate events from re-renders (e.g. view_item_list, view_cart). */
 const sentEvents = new Set<string>();

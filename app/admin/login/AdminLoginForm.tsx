@@ -5,13 +5,13 @@ import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 
 export function AdminLoginForm() {
-  const [email, setEmail] = useState('');
+  const searchParams = useSearchParams();
+  const [email, setEmail] = useState(() => searchParams?.get('email') ?? '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const searchParams = useSearchParams();
   const callbackError = (searchParams ?? new URLSearchParams()).get('error');
   const callbackCode = searchParams?.get('code');
 

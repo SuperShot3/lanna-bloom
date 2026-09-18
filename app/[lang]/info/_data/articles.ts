@@ -1016,6 +1016,27 @@ export const articles: ArticleMeta[] = [
       { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
     ],
   },
+  {
+    slug: 'wedding-bouquet-designer',
+    title: 'Wedding Bouquet Designer: Build Your Bouquet Idea Online',
+    excerpt:
+      'Answer a few quick questions about your dress, colors, and style, and get a bouquet description plus an AI image prompt to visualize it — then ask Lanna Bloom to create it for your Chiang Mai wedding.',
+    titleTh: 'นักออกแบบช่อดอกไม้เจ้าสาว: สร้างไอเดียช่อดอกไม้ออนไลน์',
+    excerptTh:
+      'ตอบคำถามสั้นๆ เกี่ยวกับชุด สีสัน และสไตล์ที่ชอบ รับคำอธิบายช่อดอกไม้พร้อมพรอมต์ AI สำหรับสร้างภาพ แล้วให้ Lanna Bloom ทำช่อจริงให้คุณในงานแต่งที่เชียงใหม่',
+    externalPath: '/wedding-bouquet-designer',
+    publishedAt: '2026-09-17T00:00:00.000Z',
+    featured: true,
+    cover: {
+      type: 'gradient',
+      gradientCss: 'linear-gradient(135deg, #f5e6e8 0%, #f9f5f0 50%, #e8dfd0 100%)',
+      center: { kind: 'emoji', value: '💐' },
+    },
+    ctaLinks: [
+      { label: 'Design your bouquet', labelTh: 'ออกแบบช่อของคุณ', href: '/wedding-bouquet-designer' },
+      { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
+    ],
+  },
 ];
 
 export function getArticleBySlug(slug: string): ArticleMeta | undefined {

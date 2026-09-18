@@ -4823,8 +4823,6 @@ select.admin-partner-edit-input {
   gap: 8px;
   min-width: 0;
   max-width: min(50vw, 320px);
-  font-size: 0.875rem;
-  font-weight: 500;
   color: var(--admin-text);
 }
 .admin-shell-header-user-icon {
@@ -4832,7 +4830,23 @@ select.admin-partner-edit-input {
   font-size: 22px;
   color: var(--admin-text-muted);
 }
+.admin-shell-header-user-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+.admin-shell-header-user-role {
+  font-size: 0.875rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .admin-shell-header-user-email {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--admin-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4840,23 +4854,61 @@ select.admin-partner-edit-input {
 .admin-shell-header-spacer {
   flex: 1;
 }
-.admin-shell-header-logout {
-  display: inline-flex;
+.admin-shell-header-menu {
+  position: relative;
+}
+.admin-shell-header-menu-btn {
+  display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: var(--admin-bg-light);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--admin-text-muted);
+}
+.admin-shell-header-menu-btn:hover,
+.admin-shell-header-menu-btn[aria-expanded='true'] {
+  background: var(--admin-border);
+  color: var(--admin-text);
+}
+.admin-shell-header-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  background: #fff;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 50;
+}
+.admin-shell-header-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #dc2626;
+  color: var(--admin-text);
   text-decoration: none;
-  border: 1px solid #fca5a5;
-  border-radius: 8px;
-  background: #fff5f5;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
 }
-.admin-shell-header-logout:hover {
+.admin-shell-header-dropdown-item:hover {
+  background: var(--admin-bg-light);
+}
+.admin-shell-header-dropdown-item-logout {
+  color: #dc2626;
+}
+.admin-shell-header-dropdown-item-logout:hover {
   background: #fee2e2;
-  border-color: #dc2626;
   color: #b91c1c;
 }
 

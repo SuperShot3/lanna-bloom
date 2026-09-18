@@ -30,6 +30,7 @@ const LOCALE_PAGES: LocalePage[] = [
   { path: '/cookies', changeFrequency: 'yearly', priority: 0.3 },
   { path: '/partner/apply', changeFrequency: 'monthly', priority: 0.55 },
   { path: '/custom-order', changeFrequency: 'monthly', priority: 0.65 },
+  { path: '/wedding-bouquet-designer', changeFrequency: 'monthly', priority: 0.65 },
   { path: '/info', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/delivery-areas-thailand', changeFrequency: 'monthly', priority: 0.72 },
 ];

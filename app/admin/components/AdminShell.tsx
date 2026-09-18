@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 const NAV_ITEMS = [
   { href: '/admin/orders', label: 'Orders', icon: 'shopping_bag' },
   { href: '/admin/emails', label: 'Emails', icon: 'mail' },
+  { href: '/admin/rewards', label: 'Rewards', icon: 'card_giftcard' },
   { href: '/admin/accounting/overview', label: 'Accounting', icon: 'account_balance_wallet' },
   { href: '/admin/partners/applications', label: 'Partners', icon: 'group' },
   { href: '/admin/provinces', label: 'Provinces', icon: 'map' },
@@ -31,8 +32,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [pendingGuideComments, setPendingGuideComments] = useState(0);
   const [orderChatUnread, setOrderChatUnread] = useState(0);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const headerMenuRef = useRef<HTMLDivElement>(null);
   const { data: session } = useSession();
   const userEmail = session?.user?.email;
+  const userRole = (session?.user as { role?: string } | undefined)?.role;
+  const userRoleLabel = userRole
+    ? userRole.charAt(0) + userRole.slice(1).toLowerCase()
+    : 'Admin';
 
   useEffect(() => {
     try {
@@ -99,6 +106,28 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!headerMenuOpen) return;
+    function handlePointerDown(event: MouseEvent) {
+      if (!headerMenuRef.current?.contains(event.target as Node)) {
+        setHeaderMenuOpen(false);
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setHeaderMenuOpen(false);
+    }
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [headerMenuOpen]);
+
+  useEffect(() => {
+    setHeaderMenuOpen(false);
   }, [pathname]);
 
   function toggleSidebarCollapsed() {
@@ -270,27 +299,47 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 <span className="material-symbols-outlined admin-shell-icon admin-shell-header-user-icon">
                   account_circle
                 </span>
-                <span className="admin-shell-header-user-email">{userEmail}</span>
+                <span className="admin-shell-header-user-text">
+                  <span className="admin-shell-header-user-role">{userRoleLabel}</span>
+                  <span className="admin-shell-header-user-email">{userEmail}</span>
+                </span>
               </div>
             ) : null}
             <div className="admin-shell-header-spacer" />
-            <Link
-              href="/admin/settings/collections"
-              prefetch={false}
-              className="admin-shell-header-logout"
-              aria-label="Settings"
-              title="Settings"
-            >
-              <span className="material-symbols-outlined admin-shell-icon">settings</span>
-              <span>Settings</span>
-            </Link>
-            <a
-              href="/api/auth/signout?callbackUrl=/admin/login"
-              className="admin-shell-header-logout"
-            >
-              <span className="material-symbols-outlined admin-shell-icon">logout</span>
-              <span>Sign out</span>
-            </a>
+            <div className="admin-shell-header-menu" ref={headerMenuRef}>
+              <button
+                type="button"
+                className="admin-shell-header-menu-btn"
+                aria-label="More options"
+                aria-haspopup="menu"
+                aria-expanded={headerMenuOpen}
+                onClick={() => setHeaderMenuOpen((open) => !open)}
+              >
+                <span className="material-symbols-outlined admin-shell-icon">more_vert</span>
+              </button>
+              {headerMenuOpen ? (
+                <div className="admin-shell-header-dropdown" role="menu">
+                  <Link
+                    href="/admin/settings/collections"
+                    prefetch={false}
+                    className="admin-shell-header-dropdown-item"
+                    role="menuitem"
+                    onClick={() => setHeaderMenuOpen(false)}
+                  >
+                    <span className="material-symbols-outlined admin-shell-icon">settings</span>
+                    <span>Settings</span>
+                  </Link>
+                  <a
+                    href="/api/auth/signout?callbackUrl=/admin/login"
+                    className="admin-shell-header-dropdown-item admin-shell-header-dropdown-item-logout"
+                    role="menuitem"
+                  >
+                    <span className="material-symbols-outlined admin-shell-icon">logout</span>
+                    <span>Sign out</span>
+                  </a>
+                </div>
+              ) : null}
+            </div>
           </header>
           <main className="admin-shell-content">{children}</main>
         </div>
